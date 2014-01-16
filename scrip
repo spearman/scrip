@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 HELP="\
 scrip <filename> [<filetype>] [flags]
 scrip -h, --help
