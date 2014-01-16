@@ -230,6 +230,7 @@ c|cc|cpp|sh) ;;
 
     cc)
         src=true
+        header_ext='cc'
         filetype='cpp' ;;
 
     cpp)
@@ -239,6 +240,12 @@ c|cc|cpp|sh) ;;
 
     hh)
         header=true
+        header_ext='hh'
+        filetype='cpp' ;;
+
+    hpp)
+        header=true
+        header_ext='hpp'
         filetype='cpp' ;;
 
     sh)
@@ -273,7 +280,7 @@ cc)
     specflags=$cflags ;;
 
 cpp)
-    if [[ $extension == '' ]] ; then
+    if [[ $extension == '' || $extension == $src_ext ]] ; then
         header_ext='hh'
     else
         header_ext=$extension
