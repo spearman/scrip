@@ -264,8 +264,12 @@ hh|hpp)
     header=true
 ;;&
 
-cc|cpp|hh|hpp)
-    filetype='c++'
+cc|hh)
+    filetype='cc'
+;;&
+
+cpp|hpp)
+    filetype='cpp'
 ;;
 
 # sh
@@ -288,7 +292,7 @@ c)
 ;;&
 
 c++|cc)
-    if [[ $header_ext == '' ]] ; then
+    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
         header_ext='hh'
     else
         header_ext=$extension
@@ -299,7 +303,7 @@ c++|cc)
 ;;&
 
 cpp)
-    if [[ $header_ext == '' ]] ; then
+    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
         header_ext='hpp'
     else
         header_ext=$extension
