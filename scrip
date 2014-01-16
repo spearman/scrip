@@ -289,7 +289,10 @@ while (($OPTIND <= $#)) ; do
         x)
             xtrace=true ;;
 
-        h)  ;;  #ignore
+        h)
+            echo "\
+ignoring -h: use -H for headers
+help syntax: scrip -h, scrip --help" ;;
 
         esac
 
