@@ -7,7 +7,7 @@ scrip <filename> [<filetype>] [flags]
 scrip -h, --help
 --
     Filetypes
-c, cpp (cc), sh
+c, c++, sh
 --
     General flags
 -f          force overwrite of existing files
@@ -15,7 +15,7 @@ c, cpp (cc), sh
 --
     Specific flags
 
-    c, cpp (cc)
+    c, c++
 -H          create a header file
 -s          create a source file
 -m          create a source file with main function and
@@ -166,11 +166,26 @@ case $1 in
 
 -h|--help)
     echo "$HELP"
-    exit ;;
+    exit
+;;
 
-*)  ;;
+*)
+;;
 
 esac
+
+# boolean flags
+
+header=false
+src=false
+script=false
+overwrite=false
+quiet=false
+struct=false
+xtrace=false
+main=false
+
+# filenames
 
 filename=$1
 filetype=$2
@@ -186,17 +201,6 @@ fullpath=$directory$'/'$name$'.'$extension
 if [[ $extension == $filename ]] ; then
     extension=
 fi
-
-# boolean flags
-
-header=false
-src=false
-script=false
-overwrite=false
-quiet=false
-struct=false
-xtrace=false
-main=false
 
 header_ext=
 src_ext=
@@ -214,49 +218,75 @@ specflags=
 # check extension if filetype not recognized
 case $filetype in
 
-c|cc|cpp|sh) ;;
+c|cc|cpp|c++|sh)
+;;
 
 *)
     #filetype not recognized, possibly not provided, check extension
     case $extension in
 
+    # c
+
     c)
         src=true
-        filetype='c' ;;
+    ;;&
 
     h)
         header=true
-        filetype='c' ;;
+    ;;&
+
+    c|h)
+        filetype='c'
+    ;;
+
+    # c++
 
     cc)
-        src=true
-        header_ext='cc'
-        filetype='cpp' ;;
+        header_ext='hh'
+        src_ext='cc'
+    ;;&
 
     cpp)
-        src=true
+        header_ext='hpp'
         src_ext='cpp'
-        filetype='cpp' ;;
+    ;;&
+
+    cc|cpp)
+        src=true
+    ;;&
 
     hh)
-        header=true
         header_ext='hh'
-        filetype='cpp' ;;
+        src_ext='cc'
+    ;;&
 
     hpp)
-        header=true
         header_ext='hpp'
-        filetype='cpp' ;;
+        src_ext='cpp'
+    ;;&
+
+    hh|hpp)
+        header=true
+    ;;&
+
+    cc|cpp|hh|hpp)
+        filetype='c++'
+    ;;
+
+    # sh
 
     sh)
         script=true
-        filetype='sh' ;;
+        filetype='sh'
+    ;;
 
     *)
         echo "error: could not determine filetype"
-        exit 1 ;;
+        exit 1
+    ;;
 
-    esac ;;
+    esac
+;;
 
 esac
 
@@ -266,10 +296,10 @@ case $filetype in
 c)
     header_ext='h'
     src_ext='c'
-    specflags=$cflags ;;
+;;&
 
-cc)
-    if [[ $extension == '' ]] ; then
+c++|cc)
+    if [[ $header_ext == '' ]] ; then
         header_ext='hh'
     else
         header_ext=$extension
@@ -277,23 +307,28 @@ cc)
     if [[ $src_ext == '' ]] ; then
         src_ext='cc'
     fi
-    specflags=$cflags ;;
+;;&
 
 cpp)
-    if [[ $extension == '' || $extension == $src_ext ]] ; then
-        header_ext='hh'
+    if [[ $header_ext == '' ]] ; then
+        header_ext='hpp'
     else
         header_ext=$extension
     fi
     if [[ $src_ext == '' ]] ; then
         src_ext='cpp'
     fi
-    specflags=$cflags ;;
+;;&
+
+c|c++|cc|cpp)
+    specflags=$cflags
+;;
 
 sh)
     specflags=$shflags
     script=true
-    script_ext='sh' ;;
+    script_ext='sh'
+;;
 
 esac
 
@@ -310,39 +345,49 @@ while (($OPTIND <= $#)) ; do
         case $o in
 
         b)
-            shell=$OPTARG ;;
+            shell=$OPTARG
+        ;;
 
         f)
-            overwrite=true ;;
+            overwrite=true
+        ;;
 
         H)
-            header=true ;;
+            header=true
+        ;;
 
         m)
             main=true
-            src=true ;;
+            src=true
+        ;;
 
         q)
-            quiet=true ;;
+            quiet=true
+        ;;
 
         s)
-            src=true ;;
+            src=true
+        ;;
 
         t)
-            struct=true ;;
+            struct=true
+        ;;
 
         u)
             header=true
             src=true
-            unit=true ;;
+            unit=true
+        ;;
 
         x)
-            xtrace=true ;;
+            xtrace=true
+        ;;
 
         h)
             echo "\
 ignoring -h: use -H for headers
-help syntax: scrip -h, scrip --help" ;;
+help syntax: scrip -h, scrip --help"
+        ;;
 
         esac
 
