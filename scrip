@@ -1,6 +1,8 @@
 #!/bin/bash
 
 HELP="\
+scrip - file creation utility
+
 scrip <filename> [<filetype>] [flags]
 scrip -h, --help
 --
@@ -9,7 +11,7 @@ c, cpp (cc), sh
 --
     General flags
 -f          force overwrite of existing files
--h|--help   help
+-q          quiet mode: don't list files created
 --
     Specific flags
 
@@ -31,15 +33,16 @@ create_c_header () {
     # Create a new header with inclusion guards
     #
 
-    if [[ $# != 3 ]] ; then
-        echo "error: create_c_header() requires 3 arguments"
+    if [[ $# != 4 ]] ; then
+        echo "error: create_c_header() requires 4 arguments"
         return 1
     fi
 
     extension=$1
     name=$2
-    overwrite=$3
     filename=$2$'.'$1
+    overwrite=$3
+    quiet=$4
 
     name_upper=$(echo $name | tr [:lower:] [:upper:])
     ext_upper=$(echo $extension | tr [:lower:] [:upper:])
@@ -47,7 +50,7 @@ create_c_header () {
     guard=$name_upper$'_'$ext_upper
 
     if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: header file already exists"
+        echo "error: $filename already exists, use -f to overwrite"
         return 1
     fi
 
@@ -63,6 +66,11 @@ create_c_header () {
         return 1
     fi
 
+    if ! $quiet ; then
+        echo "created file $filename"
+    fi
+
+    return
 }
 
 create_c_src () {
@@ -70,8 +78,8 @@ create_c_src () {
     # Create a new source file with corresponding header inclusion
     #
 
-    if [[ $# != 4 ]] ; then
-        echo "error: create_c_src() requires 4 arguments"
+    if [[ $# != 5 ]] ; then
+        echo "error: create_c_src() requires 5 arguments"
         return 1
     fi
 
@@ -80,9 +88,10 @@ create_c_src () {
     name=$3
     filename=$3$'.'$1
     overwrite=$4
+    quiet=$5
 
     if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: file already exists"
+        echo "error: $filename already exists, use -f to overwrite"
         return 1
     fi
 
@@ -95,6 +104,10 @@ create_c_src () {
         return 1
     fi
 
+    if ! $quiet ; then
+        echo "created file $filename"
+    fi
+
     return
 }
 
@@ -103,19 +116,20 @@ create_sh_script () {
     # Create a new .sh file with bash shebang and execute permission.
     #
 
-    if [[ $# != 4 ]] ; then
-        echo "error: create_sh_script() requires 4 arguments"
+    if [[ $# != 5 ]] ; then
+        echo "error: create_sh_script() requires 5 arguments"
         return 1
     fi
 
     extension=$1
     shell=$2
     name=$3
-    overwrite=$4
     filename=$3$'.'$1
+    overwrite=$4
+    quiet=$5
 
     if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: file already exists"
+        echo "error: $filename already exists, use -f to overwrite"
         return 1
     fi
 
@@ -130,6 +144,12 @@ create_sh_script () {
     fi
 
     chmod +x $filename
+
+    if ! $quiet ; then
+        echo "created file $filename"
+    fi
+
+    return
 }
 
 #
@@ -173,6 +193,7 @@ header=false
 src=false
 script=false
 overwrite=false
+quiet=false
 struct=false
 xtrace=false
 main=false
@@ -240,10 +261,25 @@ c)
     src_ext='c'
     specflags=$cflags ;;
 
-cc|cpp)
-    header_ext='hh'
+cc)
+    if [[ $extension == '' ]] ; then
+        header_ext='hh'
+    else
+        header_ext=$extension
+    fi
     if [[ $src_ext == '' ]] ; then
         src_ext='cc'
+    fi
+    specflags=$cflags ;;
+
+cpp)
+    if [[ $extension == '' ]] ; then
+        header_ext='hh'
+    else
+        header_ext=$extension
+    fi
+    if [[ $src_ext == '' ]] ; then
+        src_ext='cpp'
     fi
     specflags=$cflags ;;
 
@@ -256,9 +292,13 @@ esac
 
 # process flags
 
+flags_found=false
+
 while (($OPTIND <= $#)) ; do
 
     while getopts $genflags$specflags o ; do
+
+        flags_found=true
 
         case $o in
 
@@ -274,6 +314,9 @@ while (($OPTIND <= $#)) ; do
         m)
             main=true
             src=true ;;
+
+        q)
+            quiet=true ;;
 
         s)
             src=true ;;
@@ -302,21 +345,31 @@ help syntax: scrip -h, scrip --help" ;;
 
 done
 
+# if no flag or extension was provided, set defaults
+
 if ! $header && ! $src && ! $script ; then
-    echo "error: no files specified"
-    exit 1
+    case $filetype in
+
+    c|cc|cpp)   # default c family: create compilation unit
+        header=true
+        src=true ;;
+
+    sh)         # default shell: create script
+        script=true ;;
+
+    esac
 fi
 
 if $header ; then
-    create_c_header $header_ext $name $overwrite
+    create_c_header $header_ext $name $overwrite $quiet
 fi
 
 if $src ; then
-    create_c_src $src_ext $header_ext $name $overwrite
+    create_c_src $src_ext $header_ext $name $overwrite $quiet
 fi
 
 if $script ; then
-    create_sh_script $script_ext $shell $name $overwrite
+    create_sh_script $script_ext $shell $name $overwrite $quiet
     if $xtrace ; then
         echo $'\nset -x' >> $name$'.'$script_ext
     fi
