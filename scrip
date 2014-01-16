@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 HELP="\
 scrip <filename> [<filetype>] [flags]
 scrip -h, --help
@@ -16,7 +18,7 @@ c, cpp (cc), sh
     c, cpp (cc)
 -H          create a header file
 -s          create a source file
--m          create a source file with main function and and
+-m          create a source file with main function and
                 no header inclusion if filename==main
 -u          create pair of files for a compilation unit
 -t          create named struct
@@ -50,11 +52,11 @@ create_c_header () {
         exit 1
     fi
 
-    echo \
-$'#ifndef '$guard$'\n'\
-$'#define '$guard$'\n'\
-$'\n'\
-$'#endif'\
+    echo "\
+#ifndef $guard
+#define $guard
+
+#endif"\
     > $filename
 
     if [[ !(-e $filename) ]] ; then
@@ -84,8 +86,8 @@ create_c_src () {
         exit 1
     fi
 
-    echo \
-$'#include "'$name$'.h"'\
+    echo "\
+#include $name.h"\
     > $filename
 
     if [[ !(-e $filename) ]] ; then
@@ -116,7 +118,9 @@ create_sh_script () {
         exit 1
     fi
 
-    echo $'#!/bin/bash' > $filename
+    echo "\
+#!/bin/bash"\
+    > $filename
 
     if [[ !(-e $filename) ]]
     then
@@ -141,24 +145,35 @@ case $1 in
 
 -h|--help)
     echo "$HELP"
-    exit ;;
+    exit
+;;
 
 *)
-    ;;
+;;
 
 esac
 
 filename=$1
 filetype=$2
 
-filename=$(basename "$name")
+directory=$(dirname "$filename")
+filename=$(basename "$filename")
 extension="${filename##*.}"
 name="${filename%.*}"
+fullpath=$directory$'/'$name$'.'$extension
+
+# no-extension check
+
+if [[ $extension == $filename ]] ; then
+    extension=
+fi
 
 ##temp
+echo $directory
 echo $filename
 echo $extension
 echo $name
+echo $fullpath
 
 # boolean flags
 
@@ -176,29 +191,70 @@ script_ext=
 
 # flags
 
-genflags=fh
-
-cflags=Hmstu
-
-shflags=x
-
+genflags='fh'
+cflags='Hmstu'
+shflags='x'
 specflags=
 
+# check extension if filetype not recognized
 case $filetype in
-c)
-    header_ext=h
-    src_ext=c
-    specflags=$cflags ;;
 
-cpp|cc)
-    header_ext=hh
-    src_ext=cc
-    specflags=$cflags ;;
+c|cc|cpp|sh)
+;;
+
+*)
+    #filetype not recognized, possibly not provided, check extension
+    case $extension in
+    c)
+        src=true
+        filetype='c'
+    ;;
+    h)
+        header=true
+        filetype='c'
+    ;;
+    cc)
+        src=true
+        filetype='cpp'
+    ;;
+    hh)
+        header=true
+        filetype='cpp'
+    ;;
+    sh)
+        script=true
+        filetype='sh'
+    ;;
+    *)
+        echo "error: could not determine filetype"
+        exit 1
+    ;;
+    esac
+;;
+
+esac
+
+
+case $filetype in
+
+c)
+    header_ext='h'
+    src_ext='c'
+    specflags=$cflags
+;;
+
+cc|cpp)
+    header_ext='hh'
+    src_ext='cc'
+    specflags=$cflags
+;;
 
 sh)
     specflags=$shflags
     script=true
-    script_ext=sh ;;
+    script_ext='sh'
+;;
+
 esac
 
 # process flags
@@ -213,7 +269,7 @@ case $# in
     ind_shift=2 ;;
 esac
 
-OPTIND=$((OPTIND+2))
+OPTIND=$((OPTIND+ind_shift))
 
 while getopts $genflags$specflags o
 do
