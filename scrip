@@ -206,7 +206,7 @@ shell='bash'
 
 # flags
 
-genflags='fh'
+genflags='fhq'
 cflags='Hmstu'
 shflags='xb:'
 specflags=
