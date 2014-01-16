@@ -216,80 +216,69 @@ shflags='xb:'
 specflags=
 
 # check extension if filetype not recognized
-case $filetype in
 
-c|cc|cpp|c++|sh)
+#filetype not recognized, possibly not provided, check extension
+case $extension in
+
+# c
+
+c)
+    src=true
+;;&
+
+h)
+    header=true
+;;&
+
+c|h)
+    filetype='c'
+;;
+
+# c++
+
+cc)
+    header_ext='hh'
+    src_ext='cc'
+;;&
+
+cpp)
+    header_ext='hpp'
+    src_ext='cpp'
+;;&
+
+cc|cpp)
+    src=true
+;;&
+
+hh)
+    header_ext='hh'
+    src_ext='cc'
+;;&
+
+hpp)
+    header_ext='hpp'
+    src_ext='cpp'
+;;&
+
+hh|hpp)
+    header=true
+;;&
+
+cc|cpp|hh|hpp)
+    filetype='c++'
+;;
+
+# sh
+
+sh)
+    script=true
+    filetype='sh'
 ;;
 
 *)
-    #filetype not recognized, possibly not provided, check extension
-    case $extension in
-
-    # c
-
-    c)
-        src=true
-    ;;&
-
-    h)
-        header=true
-    ;;&
-
-    c|h)
-        filetype='c'
-    ;;
-
-    # c++
-
-    cc)
-        header_ext='hh'
-        src_ext='cc'
-    ;;&
-
-    cpp)
-        header_ext='hpp'
-        src_ext='cpp'
-    ;;&
-
-    cc|cpp)
-        src=true
-    ;;&
-
-    hh)
-        header_ext='hh'
-        src_ext='cc'
-    ;;&
-
-    hpp)
-        header_ext='hpp'
-        src_ext='cpp'
-    ;;&
-
-    hh|hpp)
-        header=true
-    ;;&
-
-    cc|cpp|hh|hpp)
-        filetype='c++'
-    ;;
-
-    # sh
-
-    sh)
-        script=true
-        filetype='sh'
-    ;;
-
-    *)
-        echo "error: could not determine filetype"
-        exit 1
-    ;;
-
-    esac
 ;;
 
 esac
-
 
 case $filetype in
 
@@ -328,6 +317,11 @@ sh)
     specflags=$shflags
     script=true
     script_ext='sh'
+;;
+
+*)
+    echo "error: could not determine filetype"
+    exit 1
 ;;
 
 esac
@@ -402,7 +396,7 @@ done
 if ! $header && ! $src && ! $script ; then
     case $filetype in
 
-    c|cc|cpp)   # default c family: create compilation unit
+    c++|c|cc|cpp)   # default c family: create compilation unit
         header=true
         src=true ;;
 
