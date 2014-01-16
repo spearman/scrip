@@ -23,6 +23,7 @@ c, cpp (cc), sh
 
     sh
 -x          create file with xtrace set
+-b          specify a different shell in /bin/ (default bash)
 "
 
 create_c_header () {
@@ -32,7 +33,7 @@ create_c_header () {
 
     if [[ $# != 3 ]] ; then
         echo "error: create_c_header() requires 3 arguments"
-        exit 1
+        return 1
     fi
 
     extension=$1
@@ -46,8 +47,8 @@ create_c_header () {
     guard=$name_upper$'_'$ext_upper
 
     if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: file already exists"
-        exit 1
+        echo "error: header file already exists"
+        return 1
     fi
 
     echo "\
@@ -59,7 +60,7 @@ create_c_header () {
 
     if [[ !(-e $filename) ]] ; then
         echo "error: file not created"
-        exit 1
+        return 1
     fi
 
 }
@@ -69,31 +70,32 @@ create_c_src () {
     # Create a new source file with corresponding header inclusion
     #
 
-    if [[ $# != 3 ]] ; then
-        echo "error: create_c_src() requires 3 arguments"
-        exit 1
+    if [[ $# != 4 ]] ; then
+        echo "error: create_c_src() requires 4 arguments"
+        return 1
     fi
 
     extension=$1
-    name=$2
-    filename=$2$'.'$1
-    overwrite=$3
+    header_ext=$2
+    name=$3
+    filename=$3$'.'$1
+    overwrite=$4
 
     if [[ -e $filename ]] && ! $overwrite ; then
         echo "error: file already exists"
-        exit 1
+        return 1
     fi
 
     echo "\
-#include $name.h"\
+#include \"$name.$header_ext\""\
     > $filename
 
     if [[ !(-e $filename) ]] ; then
         echo "error: file not created"
-        exit 1
+        return 1
     fi
 
-    exit
+    return
 }
 
 create_sh_script () {
@@ -101,29 +103,30 @@ create_sh_script () {
     # Create a new .sh file with bash shebang and execute permission.
     #
 
-    if [[ $# != 3 ]] ; then
-        echo "error: create_sh_script() requires 3 arguments"
-        exit 1
+    if [[ $# != 4 ]] ; then
+        echo "error: create_sh_script() requires 4 arguments"
+        return 1
     fi
 
     extension=$1
-    name=$2
-    overwrite=$3
-    filename=$2$'.'$1
+    shell=$2
+    name=$3
+    overwrite=$4
+    filename=$3$'.'$1
 
     if [[ -e $filename ]] && ! $overwrite ; then
         echo "error: file already exists"
-        exit 1
+        return 1
     fi
 
     echo "\
-#!/bin/bash"\
+#!/bin/$shell"\
     > $filename
 
     if [[ !(-e $filename) ]]
     then
         echo "error: file not created"
-        exit 1
+        return 1
     fi
 
     chmod +x $filename
@@ -133,7 +136,7 @@ create_sh_script () {
 #   main
 #
 
-if [[ $# < 1 || $# > 3 ]] ; then
+if [[ $# < 1 ]] ; then
     echo "error: syntax is 'scrip <filename> [<filetype>] [flags]' or 'scrip -h' for help"
     exit 1
 
@@ -143,11 +146,9 @@ case $1 in
 
 -h|--help)
     echo "$HELP"
-    exit
-;;
+    exit ;;
 
-*)
-;;
+*)  ;;
 
 esac
 
@@ -166,13 +167,6 @@ if [[ $extension == $filename ]] ; then
     extension=
 fi
 
-##temp
-echo $directory
-echo $filename
-echo $extension
-echo $name
-echo $fullpath
-
 # boolean flags
 
 header=false
@@ -187,48 +181,54 @@ header_ext=
 src_ext=
 script_ext=
 
+shell='bash'
+
 # flags
 
 genflags='fh'
 cflags='Hmstu'
-shflags='x'
+shflags='xb:'
 specflags=
 
 # check extension if filetype not recognized
 case $filetype in
 
-c|cc|cpp|sh)
-;;
+c|cc|cpp|sh) ;;
 
 *)
     #filetype not recognized, possibly not provided, check extension
     case $extension in
+
     c)
         src=true
-        filetype='c'
-    ;;
+        filetype='c' ;;
+
     h)
         header=true
-        filetype='c'
-    ;;
+        filetype='c' ;;
+
     cc)
         src=true
-        filetype='cpp'
-    ;;
+        filetype='cpp' ;;
+
+    cpp)
+        src=true
+        src_ext='cpp'
+        filetype='cpp' ;;
+
     hh)
         header=true
-        filetype='cpp'
-    ;;
+        filetype='cpp' ;;
+
     sh)
         script=true
-        filetype='sh'
-    ;;
+        filetype='sh' ;;
+
     *)
         echo "error: could not determine filetype"
-        exit 1
-    ;;
-    esac
-;;
+        exit 1 ;;
+
+    esac ;;
 
 esac
 
@@ -238,59 +238,65 @@ case $filetype in
 c)
     header_ext='h'
     src_ext='c'
-    specflags=$cflags
-;;
+    specflags=$cflags ;;
 
 cc|cpp)
     header_ext='hh'
-    src_ext='cc'
-    specflags=$cflags
-;;
+    if [[ $src_ext == '' ]] ; then
+        src_ext='cc'
+    fi
+    specflags=$cflags ;;
 
 sh)
     specflags=$shflags
     script=true
-    script_ext='sh'
-;;
+    script_ext='sh' ;;
 
 esac
 
 # process flags
 
-ind_shift=0
-case $# in
-1)
-    ;;
-2)
-    ind_shift=1 ;;
-3)
-    ind_shift=2 ;;
-esac
+while (($OPTIND <= $#)) ; do
 
-OPTIND=$((OPTIND+ind_shift))
+    while getopts $genflags$specflags o ; do
 
-while getopts $genflags$specflags o
-do
-    case $o in
-    f)
-        overwrite=true ;;
-    H)
-        header=true ;;
-    m)
-        main=true
-        src=true ;;
-    s)
-        src=true ;;
-    t)
-        struct=true ;;
-    u)
-        header=true
-        src=true
-        unit=true ;;
-    x)
-        xtrace=true ;;
-    h)  ;;
-    esac
+        case $o in
+
+        b)
+            shell=$OPTARG ;;
+
+        f)
+            overwrite=true ;;
+
+        H)
+            header=true ;;
+
+        m)
+            main=true
+            src=true ;;
+
+        s)
+            src=true ;;
+
+        t)
+            struct=true ;;
+
+        u)
+            header=true
+            src=true
+            unit=true ;;
+
+        x)
+            xtrace=true ;;
+
+        h)  ;;  #ignore
+
+        esac
+
+    done
+
+    OPTIND=$((OPTIND+1))
+
 done
 
 if ! $header && ! $src && ! $script ; then
@@ -303,11 +309,11 @@ if $header ; then
 fi
 
 if $src ; then
-    create_c_src $src_ext $name $overwrite
+    create_c_src $src_ext $header_ext $name $overwrite
 fi
 
 if $script ; then
-    create_sh_script $script_ext $name $overwrite
+    create_sh_script $script_ext $shell $name $overwrite
     if $xtrace ; then
         echo $'\nset -x' >> $name$'.'$script_ext
     fi
