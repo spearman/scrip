@@ -215,23 +215,41 @@ cflags='Hmstu'
 shflags='xb:'
 specflags=
 
-# check extension if filetype not recognized
+# check filetype
 
-#filetype not recognized, possibly not provided, check extension
+known_filetype=false
+
+case $filetype in
+
+c|c++|cc|cpp|sh)
+    known_filetype=true
+;;
+
+*)
+;;
+
+esac
+
+# extension
+
 case $extension in
 
 # c
 
 c)
+    src_ext='c'
     src=true
 ;;&
 
 h)
+    header_ext='h'
     header=true
 ;;&
 
 c|h)
-    filetype='c'
+    if ! $known_filetype ; then
+        filetype='c'
+    fi
 ;;
 
 # c++
@@ -265,24 +283,32 @@ hh|hpp)
 ;;&
 
 cc|hh)
-    filetype='cc'
+    if ! $known_filetype ; then
+        filetype='cc'
+    fi
 ;;&
 
 cpp|hpp)
-    filetype='cpp'
+    if ! $known_filetype ; then
+        filetype='cpp'
+    fi
 ;;
 
 # sh
 
 sh)
     script=true
-    filetype='sh'
+    if ! $known_filetype ; then
+        filetype='sh'
+    fi
 ;;
 
 *)
 ;;
 
 esac
+
+# filetype
 
 case $filetype in
 
@@ -291,7 +317,7 @@ c)
     src_ext='c'
 ;;&
 
-c++|cc)
+cc)
     if [[ $header_ext == '' || $extension == $src_ext ]] ; then
         header_ext='hh'
     else
@@ -302,7 +328,7 @@ c++|cc)
     fi
 ;;&
 
-cpp)
+c++|cpp)
     if [[ $header_ext == '' || $extension == $src_ext ]] ; then
         header_ext='hpp'
     else
