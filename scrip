@@ -33,24 +33,27 @@ create_c_header () {
     # Create a new header with inclusion guards
     #
 
-    if [[ $# != 4 ]] ; then
-        echo "error: create_c_header() requires 4 arguments"
+    if [[ $# != 5 ]] ; then
+        echo "error: create_c_header() requires 5 arguments"
         return 1
     fi
 
-    extension=$1
-    name=$2
-    filename=$2$'.'$1
-    overwrite=$3
-    quiet=$4
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+
+    filename=$3$'.'$2
+    fullpath=$directory'/'$filename
 
     name_upper=$(echo $name | tr [:lower:] [:upper:])
     ext_upper=$(echo $extension | tr [:lower:] [:upper:])
 
     guard=$name_upper$'_'$ext_upper
 
-    if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: $filename already exists, use -f to overwrite"
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
         return 1
     fi
 
@@ -59,15 +62,15 @@ create_c_header () {
 #define $guard
 
 #endif"\
-    > $filename
+    > $fullpath
 
-    if [[ !(-e $filename) ]] ; then
+    if [[ !(-e $fullpath) ]] ; then
         echo "error: file not created"
         return 1
     fi
 
     if ! $quiet ; then
-        echo "created file $filename"
+        echo "created file $fullpath"
     fi
 
     return
@@ -78,34 +81,37 @@ create_c_src () {
     # Create a new source file with corresponding header inclusion
     #
 
-    if [[ $# != 5 ]] ; then
-        echo "error: create_c_src() requires 5 arguments"
+    if [[ $# != 6 ]] ; then
+        echo "error: create_c_src() requires 6 arguments"
         return 1
     fi
 
-    extension=$1
-    header_ext=$2
-    name=$3
-    filename=$3$'.'$1
-    overwrite=$4
-    quiet=$5
+    directory=$1
+    extension=$2
+    header_ext=$3
+    name=$4
+    overwrite=$5
+    quiet=$6
 
-    if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: $filename already exists, use -f to overwrite"
+    filename=$4$'.'$2
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
         return 1
     fi
 
     echo "\
 #include \"$name.$header_ext\""\
-    > $filename
+    > $fullpath
 
-    if [[ !(-e $filename) ]] ; then
+    if [[ !(-e $fullpath) ]] ; then
         echo "error: file not created"
         return 1
     fi
 
     if ! $quiet ; then
-        echo "created file $filename"
+        echo "created file $fullpath"
     fi
 
     return
@@ -116,37 +122,40 @@ create_sh_script () {
     # Create a new .sh file with bash shebang and execute permission.
     #
 
-    if [[ $# != 5 ]] ; then
-        echo "error: create_sh_script() requires 5 arguments"
+    if [[ $# != 6 ]] ; then
+        echo "error: create_sh_script() requires 6 arguments"
         return 1
     fi
 
-    extension=$1
-    shell=$2
-    name=$3
-    filename=$3$'.'$1
-    overwrite=$4
-    quiet=$5
+    directory=$1
+    extension=$2
+    shell=$3
+    name=$4
+    overwrite=$5
+    quiet=$6
 
-    if [[ -e $filename ]] && ! $overwrite ; then
-        echo "error: $filename already exists, use -f to overwrite"
+    filename=$4$'.'$2
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
         return 1
     fi
 
     echo "\
 #!/bin/$shell"\
-    > $filename
+    > $fullpath
 
-    if [[ !(-e $filename) ]]
+    if [[ !(-e $fullpath) ]]
     then
         echo "error: file not created"
         return 1
     fi
 
-    chmod +x $filename
+    chmod +x $fullpath
 
     if ! $quiet ; then
-        echo "created file $filename"
+        echo "created file $fullpath"
     fi
 
     return
@@ -164,13 +173,13 @@ fi
 
 case $1 in
 
--h|--help)
-    echo "$HELP"
-    exit
-;;
+    -h|--help)
+        echo "$HELP"
+        exit
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -194,7 +203,6 @@ directory=$(dirname "$filename")
 filename=$(basename "$filename")
 extension="${filename##*.}"
 name="${filename%.*}"
-fullpath=$directory$'/'$name$'.'$extension
 
 # no-extension check
 
@@ -202,9 +210,14 @@ if [[ $extension == $filename ]] ; then
     extension=
 fi
 
+
 header_ext=
 src_ext=
 script_ext=
+
+header_filename=
+src_filename=
+script_filename=
 
 shell='bash'
 
@@ -221,12 +234,12 @@ known_filetype=false
 
 case $filetype in
 
-c|c++|cc|cpp|sh)
-    known_filetype=true
-;;
+    c|c++|cc|cpp|sh)
+        known_filetype=true
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -234,77 +247,77 @@ esac
 
 case $extension in
 
-# c
+    # c
 
-c)
-    src_ext='c'
-    src=true
-;;&
+    c)
+        src_ext='c'
+        src=true
+    ;;&
 
-h)
-    header_ext='h'
-    header=true
-;;&
+    h)
+        header_ext='h'
+        header=true
+    ;;&
 
-c|h)
-    if ! $known_filetype ; then
-        filetype='c'
-    fi
-;;
+    c|h)
+        if ! $known_filetype ; then
+            filetype='c'
+        fi
+    ;;
 
-# c++
+    # c++
 
-cc)
-    header_ext='hh'
-    src_ext='cc'
-;;&
+    cc)
+        header_ext='hh'
+        src_ext='cc'
+    ;;&
 
-cpp)
-    header_ext='hpp'
-    src_ext='cpp'
-;;&
+    cpp)
+        header_ext='hpp'
+        src_ext='cpp'
+    ;;&
 
-cc|cpp)
-    src=true
-;;&
+    cc|cpp)
+        src=true
+    ;;&
 
-hh)
-    header_ext='hh'
-    src_ext='cc'
-;;&
+    hh)
+        header_ext='hh'
+        src_ext='cc'
+    ;;&
 
-hpp)
-    header_ext='hpp'
-    src_ext='cpp'
-;;&
+    hpp)
+        header_ext='hpp'
+        src_ext='cpp'
+    ;;&
 
-hh|hpp)
-    header=true
-;;&
+    hh|hpp)
+        header=true
+    ;;&
 
-cc|hh)
-    if ! $known_filetype ; then
-        filetype='cc'
-    fi
-;;&
+    cc|hh)
+        if ! $known_filetype ; then
+            filetype='cc'
+        fi
+    ;;&
 
-cpp|hpp)
-    if ! $known_filetype ; then
-        filetype='cpp'
-    fi
-;;
+    cpp|hpp)
+        if ! $known_filetype ; then
+            filetype='cpp'
+        fi
+    ;;
 
-# sh
+    # sh
 
-sh)
-    script=true
-    if ! $known_filetype ; then
-        filetype='sh'
-    fi
-;;
+    sh)
+        script=true
+        if ! $known_filetype ; then
+            filetype='sh'
+        fi
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -312,49 +325,59 @@ esac
 
 case $filetype in
 
-c)
-    header_ext='h'
-    src_ext='c'
-;;&
+    c)
+        header_ext='h'
+        src_ext='c'
+    ;;&
 
-cc)
-    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
-        header_ext='hh'
-    else
-        header_ext=$extension
-    fi
-    if [[ $src_ext == '' ]] ; then
-        src_ext='cc'
-    fi
-;;&
+    cc)
+        if [[ $header_ext == '' || $extension == $src_ext ]] ; then
+            header_ext='hh'
+        else
+            header_ext=$extension
+        fi
+        if [[ $src_ext == '' ]] ; then
+            src_ext='cc'
+        fi
+    ;;&
 
-c++|cpp)
-    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
-        header_ext='hpp'
-    else
-        header_ext=$extension
-    fi
-    if [[ $src_ext == '' ]] ; then
-        src_ext='cpp'
-    fi
-;;&
+    c++|cpp)
+        if [[ $header_ext == '' || $extension == $src_ext ]] ; then
+            header_ext='hpp'
+        else
+            header_ext=$extension
+        fi
+        if [[ $src_ext == '' ]] ; then
+            src_ext='cpp'
+        fi
+    ;;&
 
-c|c++|cc|cpp)
-    specflags=$cflags
-;;
+    c|c++|cc|cpp)
+        specflags=$cflags
+    ;;
 
-sh)
-    specflags=$shflags
-    script=true
-    script_ext='sh'
-;;
+    sh)
+        specflags=$shflags
+        script=true
+        script_ext='sh'
+    ;;
 
-*)
-    echo "error: could not determine filetype"
-    exit 1
-;;
+    *)
+        echo "error: could not determine filetype"
+        exit 1
+    ;;
 
 esac
+
+# filenames
+
+header_filename=$name'.'$header_ext
+src_filename=$name'.'$src_ext
+script_filename=$name'.'$script_ext
+
+header_fullpath=$directory'/'$header_filename
+src_fullpath=$directory'/'$src_filename
+script_fullpath=$directory'/'$script_filename
 
 # process flags
 
@@ -368,50 +391,50 @@ while (($OPTIND <= $#)) ; do
 
         case $o in
 
-        b)
-            shell=$OPTARG
-        ;;
+            b)
+                shell=$OPTARG
+            ;;
 
-        f)
-            overwrite=true
-        ;;
+            f)
+                overwrite=true
+            ;;
 
-        H)
-            header=true
-        ;;
+            H)
+                header=true
+            ;;
 
-        m)
-            main=true
-            src=true
-        ;;
+            m)
+                main=true
+                src=true
+            ;;
 
-        q)
-            quiet=true
-        ;;
+            q)
+                quiet=true
+            ;;
 
-        s)
-            src=true
-        ;;
+            s)
+                src=true
+            ;;
 
-        t)
-            struct=true
-        ;;
+            t)
+                struct=true
+            ;;
 
-        u)
-            header=true
-            src=true
-            unit=true
-        ;;
+            u)
+                header=true
+                src=true
+                unit=true
+            ;;
 
-        x)
-            xtrace=true
-        ;;
+            x)
+                xtrace=true
+            ;;
 
-        h)
-            echo "\
+            h)
+                echo "\
 ignoring -h: use -H for headers
 help syntax: scrip -h, scrip --help"
-        ;;
+            ;;
 
         esac
 
@@ -426,12 +449,12 @@ done
 if ! $header && ! $src && ! $script ; then
     case $filetype in
 
-    c++|c|cc|cpp)   # default c family: create compilation unit
-        header=true
-        src=true ;;
+        c++|c|cc|cpp)   # default c family: create compilation unit
+            header=true
+            src=true ;;
 
-    sh)         # default shell: create script
-        script=true ;;
+        sh)         # default shell: create script
+            script=true ;;
 
     esac
 fi
@@ -442,12 +465,14 @@ if ! $header && $struct ; then
     echo "ignoring -t struct: no header file created"
 fi
 
+# file creation
+
 if $header ; then
-    create_c_header $header_ext $name $overwrite $quiet
+    create_c_header $directory $header_ext $name $overwrite $quiet
     if $struct ; then
-        head -n -1 $name'.'$header_ext > $name'.'$header_ext'.tmp'
-        cat $name'.'$header_ext'.tmp' > $name'.'$header_ext
-        rm $name'.'$header_ext'.tmp'
+        head -n -1 $header_fullpath > $header_fullpath'.tmp'
+        cat $header_fullpath'.tmp' > $header_fullpath
+        rm $header_fullpath'.tmp'
         echo "\
 struct $name;
 
@@ -457,21 +482,23 @@ struct $name
 };
 
 #endif"\
-        >> $name$'.'$header_ext
+        >> $header_fullpath
     fi
 fi
 
 if $src ; then
-    create_c_src $src_ext $header_ext $name $overwrite $quiet
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet
 fi
 
 if $script ; then
-    create_sh_script $script_ext $shell $name $overwrite $quiet
+    create_sh_script $directory $script_ext $shell $name $overwrite $quiet
     if $xtrace ; then
         echo "\
 set -x"\
         >> $name$'.'$script_ext
     fi
 fi
+
+# exit
 
 exit
