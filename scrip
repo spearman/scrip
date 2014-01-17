@@ -33,8 +33,8 @@ create_c_header () {
     # Create a new header with inclusion guards
     #
 
-    if [[ $# != 5 ]] ; then
-        echo "error: create_c_header() requires 5 arguments"
+    if [[ $# != 6 ]] ; then
+        echo "error: create_c_header() requires 6 arguments"
         return 1
     fi
 
@@ -43,6 +43,7 @@ create_c_header () {
     name=$3
     overwrite=$4
     quiet=$5
+    struct=$6
 
     filename=$3$'.'$2
     fullpath=$directory'/'$filename
@@ -69,6 +70,25 @@ create_c_header () {
         return 1
     fi
 
+    if $struct ; then
+
+        head -n -1 $fullpath > $fullpath'.tmp'
+        cat $fullpath'.tmp' > $fullpath
+        rm $fullpath'.tmp'
+
+        echo "\
+struct $name;
+
+struct $name
+{
+
+};
+
+#endif"\
+        >> $fullpath
+
+    fi
+
     if ! $quiet ; then
         echo "created file $fullpath"
     fi
@@ -81,8 +101,8 @@ create_c_src () {
     # Create a new source file with corresponding header inclusion
     #
 
-    if [[ $# != 7 ]] ; then
-        echo "error: create_c_src() requires 7 arguments"
+    if [[ $# != 8 ]] ; then
+        echo "error: create_c_src() requires 8 arguments"
         return 1
     fi
 
@@ -93,6 +113,7 @@ create_c_src () {
     overwrite=$5
     quiet=$6
     no_header=$7
+    main=$8
 
     filename=$4$'.'$2
     fullpath=$directory'/'$filename
@@ -115,6 +136,21 @@ create_c_src () {
         return 1
     fi
 
+    if $main ; then
+
+        if ! $no_header ; then
+            echo "" >> $fullpath
+        fi
+
+        echo "\
+int main()
+{
+    return 0;
+}"\
+        >> $fullpath
+
+    fi
+
     if ! $quiet ; then
         echo "created file $fullpath"
     fi
@@ -127,8 +163,8 @@ create_sh_script () {
     # Create a new .sh file with bash shebang and execute permission.
     #
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_sh_script() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_sh_script() requires 7 arguments"
         return 1
     fi
 
@@ -138,6 +174,7 @@ create_sh_script () {
     name=$4
     overwrite=$5
     quiet=$6
+    xtrace=$7
 
     filename=$4$'.'$2
     fullpath=$directory'/'$filename
@@ -155,6 +192,12 @@ create_sh_script () {
     then
         echo "error: file not created"
         return 1
+    fi
+
+    if $xtrace ; then
+        echo "\
+set -x"\
+        >> $fullpath
     fi
 
     chmod +x $fullpath
@@ -460,7 +503,7 @@ if ! $header && ! $src && ! $script ; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
-            if ! $main ; then
+            if [[ $name != 'main' ]] ; then
                 header=true
             fi
             src=true ;;
@@ -484,62 +527,25 @@ fi
 # file creation
 
 if $header ; then
-    create_c_header $directory $header_ext $name $overwrite $quiet
-
-    if $struct ; then
-
-        head -n -1 $header_fullpath > $header_fullpath'.tmp'
-        cat $header_fullpath'.tmp' > $header_fullpath
-        rm $header_fullpath'.tmp'
-
-        echo "\
-struct $name;
-
-struct $name
-{
-
-};
-
-#endif"\
-        >> $header_fullpath
-
-    fi
+    create_c_header $directory $header_ext $name $overwrite $quiet $struct
 fi
 
 if $src ; then
 
     no_header=false
 
-    if $main && ! $header ; then
+    if [[ $name == 'main' ]] ; then
         no_header=true
     fi
 
-    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main
 
-    if $main ; then
-
-        if ! $no_header ; then
-            echo "" >> $src_fullpath
-        fi
-
-        echo "\
-int main()
-{
-    return 0;
-}"\
-        >> $src_fullpath
-
-    fi
 fi
 
 if $script ; then
-    create_sh_script $directory $script_ext $shell $name $overwrite $quiet
 
-    if $xtrace ; then
-        echo "\
-set -x"\
-        >> $name$'.'$script_ext
-    fi
+    create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace
+
 fi
 
 # exit
