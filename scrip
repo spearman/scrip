@@ -164,13 +164,13 @@ fi
 
 case $1 in
 
--h|--help)
-    echo "$HELP"
-    exit
-;;
+    -h|--help)
+        echo "$HELP"
+        exit
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -221,12 +221,12 @@ known_filetype=false
 
 case $filetype in
 
-c|c++|cc|cpp|sh)
-    known_filetype=true
-;;
+    c|c++|cc|cpp|sh)
+        known_filetype=true
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -234,77 +234,77 @@ esac
 
 case $extension in
 
-# c
+    # c
 
-c)
-    src_ext='c'
-    src=true
-;;&
+    c)
+        src_ext='c'
+        src=true
+    ;;&
 
-h)
-    header_ext='h'
-    header=true
-;;&
+    h)
+        header_ext='h'
+        header=true
+    ;;&
 
-c|h)
-    if ! $known_filetype ; then
-        filetype='c'
-    fi
-;;
+    c|h)
+        if ! $known_filetype ; then
+            filetype='c'
+        fi
+    ;;
 
-# c++
+    # c++
 
-cc)
-    header_ext='hh'
-    src_ext='cc'
-;;&
+    cc)
+        header_ext='hh'
+        src_ext='cc'
+    ;;&
 
-cpp)
-    header_ext='hpp'
-    src_ext='cpp'
-;;&
+    cpp)
+        header_ext='hpp'
+        src_ext='cpp'
+    ;;&
 
-cc|cpp)
-    src=true
-;;&
+    cc|cpp)
+        src=true
+    ;;&
 
-hh)
-    header_ext='hh'
-    src_ext='cc'
-;;&
+    hh)
+        header_ext='hh'
+        src_ext='cc'
+    ;;&
 
-hpp)
-    header_ext='hpp'
-    src_ext='cpp'
-;;&
+    hpp)
+        header_ext='hpp'
+        src_ext='cpp'
+    ;;&
 
-hh|hpp)
-    header=true
-;;&
+    hh|hpp)
+        header=true
+    ;;&
 
-cc|hh)
-    if ! $known_filetype ; then
-        filetype='cc'
-    fi
-;;&
+    cc|hh)
+        if ! $known_filetype ; then
+            filetype='cc'
+        fi
+    ;;&
 
-cpp|hpp)
-    if ! $known_filetype ; then
-        filetype='cpp'
-    fi
-;;
+    cpp|hpp)
+        if ! $known_filetype ; then
+            filetype='cpp'
+        fi
+    ;;
 
-# sh
+    # sh
 
-sh)
-    script=true
-    if ! $known_filetype ; then
-        filetype='sh'
-    fi
-;;
+    sh)
+        script=true
+        if ! $known_filetype ; then
+            filetype='sh'
+        fi
+    ;;
 
-*)
-;;
+    *)
+    ;;
 
 esac
 
@@ -312,47 +312,47 @@ esac
 
 case $filetype in
 
-c)
-    header_ext='h'
-    src_ext='c'
-;;&
+    c)
+        header_ext='h'
+        src_ext='c'
+    ;;&
 
-cc)
-    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
-        header_ext='hh'
-    else
-        header_ext=$extension
-    fi
-    if [[ $src_ext == '' ]] ; then
-        src_ext='cc'
-    fi
-;;&
+    cc)
+        if [[ $header_ext == '' || $extension == $src_ext ]] ; then
+            header_ext='hh'
+        else
+            header_ext=$extension
+        fi
+        if [[ $src_ext == '' ]] ; then
+            src_ext='cc'
+        fi
+    ;;&
 
-c++|cpp)
-    if [[ $header_ext == '' || $extension == $src_ext ]] ; then
-        header_ext='hpp'
-    else
-        header_ext=$extension
-    fi
-    if [[ $src_ext == '' ]] ; then
-        src_ext='cpp'
-    fi
-;;&
+    c++|cpp)
+        if [[ $header_ext == '' || $extension == $src_ext ]] ; then
+            header_ext='hpp'
+        else
+            header_ext=$extension
+        fi
+        if [[ $src_ext == '' ]] ; then
+            src_ext='cpp'
+        fi
+    ;;&
 
-c|c++|cc|cpp)
-    specflags=$cflags
-;;
+    c|c++|cc|cpp)
+        specflags=$cflags
+    ;;
 
-sh)
-    specflags=$shflags
-    script=true
-    script_ext='sh'
-;;
+    sh)
+        specflags=$shflags
+        script=true
+        script_ext='sh'
+    ;;
 
-*)
-    echo "error: could not determine filetype"
-    exit 1
-;;
+    *)
+        echo "error: could not determine filetype"
+        exit 1
+    ;;
 
 esac
 
@@ -368,50 +368,50 @@ while (($OPTIND <= $#)) ; do
 
         case $o in
 
-        b)
-            shell=$OPTARG
-        ;;
+            b)
+                shell=$OPTARG
+            ;;
 
-        f)
-            overwrite=true
-        ;;
+            f)
+                overwrite=true
+            ;;
 
-        H)
-            header=true
-        ;;
+            H)
+                header=true
+            ;;
 
-        m)
-            main=true
-            src=true
-        ;;
+            m)
+                main=true
+                src=true
+            ;;
 
-        q)
-            quiet=true
-        ;;
+            q)
+                quiet=true
+            ;;
 
-        s)
-            src=true
-        ;;
+            s)
+                src=true
+            ;;
 
-        t)
-            struct=true
-        ;;
+            t)
+                struct=true
+            ;;
 
-        u)
-            header=true
-            src=true
-            unit=true
-        ;;
+            u)
+                header=true
+                src=true
+                unit=true
+            ;;
 
-        x)
-            xtrace=true
-        ;;
+            x)
+                xtrace=true
+            ;;
 
-        h)
-            echo "\
-ignoring -h: use -H for headers
-help syntax: scrip -h, scrip --help"
-        ;;
+            h)
+                echo "\
+    ignoring -h: use -H for headers
+    help syntax: scrip -h, scrip --help"
+            ;;
 
         esac
 
@@ -426,12 +426,12 @@ done
 if ! $header && ! $src && ! $script ; then
     case $filetype in
 
-    c++|c|cc|cpp)   # default c family: create compilation unit
-        header=true
-        src=true ;;
+        c++|c|cc|cpp)   # default c family: create compilation unit
+            header=true
+            src=true ;;
 
-    sh)         # default shell: create script
-        script=true ;;
+        sh)         # default shell: create script
+            script=true ;;
 
     esac
 fi
