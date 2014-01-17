@@ -81,8 +81,8 @@ create_c_src () {
     # Create a new source file with corresponding header inclusion
     #
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_c_src() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_c_src() requires 7 arguments"
         return 1
     fi
 
@@ -92,6 +92,7 @@ create_c_src () {
     name=$4
     overwrite=$5
     quiet=$6
+    no_header=$7
 
     filename=$4$'.'$2
     fullpath=$directory'/'$filename
@@ -101,9 +102,13 @@ create_c_src () {
         return 1
     fi
 
-    echo "\
+    touch $fullpath
+
+    if ! $no_header ; then
+        echo "\
 #include \"$name.$header_ext\""\
-    > $fullpath
+        > $fullpath
+    fi
 
     if [[ !(-e $fullpath) ]] ; then
         echo "error: file not created"
@@ -405,7 +410,6 @@ while (($OPTIND <= $#)) ; do
 
             m)
                 main=true
-                src=true
             ;;
 
             q)
@@ -444,13 +448,21 @@ help syntax: scrip -h, scrip --help"
 
 done
 
+# catch main
+
+if [[ $name == 'main' ]] ; then
+    main=true
+fi
+
 # if no flag or extension was provided, set defaults
 
 if ! $header && ! $src && ! $script ; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
-            header=true
+            if ! $main ; then
+                header=true
+            fi
             src=true ;;
 
         sh)         # default shell: create script
@@ -461,6 +473,10 @@ fi
 
 # messages for invalid options
 
+if ! $src && $main ; then
+    echo "warning: main specified but no source file created"
+fi
+
 if ! $header && $struct ; then
     echo "ignoring -t struct: no header file created"
 fi
@@ -469,10 +485,13 @@ fi
 
 if $header ; then
     create_c_header $directory $header_ext $name $overwrite $quiet
+
     if $struct ; then
+
         head -n -1 $header_fullpath > $header_fullpath'.tmp'
         cat $header_fullpath'.tmp' > $header_fullpath
         rm $header_fullpath'.tmp'
+
         echo "\
 struct $name;
 
@@ -483,15 +502,39 @@ struct $name
 
 #endif"\
         >> $header_fullpath
+
     fi
 fi
 
 if $src ; then
-    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet
+
+    no_header=false
+
+    if $main && ! $header ; then
+        no_header=true
+    fi
+
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header
+
+    if $main ; then
+
+        if ! $no_header ; then
+            echo "" >> $src_fullpath
+        fi
+
+        echo "\
+int main()
+{
+    return 0;
+}"\
+        >> $src_fullpath
+
+    fi
 fi
 
 if $script ; then
     create_sh_script $directory $script_ext $shell $name $overwrite $quiet
+
     if $xtrace ; then
         echo "\
 set -x"\
