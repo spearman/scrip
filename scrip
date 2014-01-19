@@ -1,5 +1,9 @@
 #!/bin/bash
 
+###########################################################################
+##  help
+#
+
 HELP="\
 scrip - file creation utility
 
@@ -17,27 +21,29 @@ c, c++, sh
 
     c, c++
 -H          create a header file
--s          create a source file
--m          create a source file with main function and
+-i          include std io files in header
+-m [args]   create a source file with main function and
                 no header inclusion if filename==main
--u          create pair of files for a compilation unit
+                args is either 'void' or 'args'
+-s          create a source file
 -t          create named struct
+-u          create pair of files for a compilation unit
 
     sh
 -x          create file with xtrace set
--b          specify a different shell in /bin/ (default bash)
+-b [shell]  specify a different shell in /bin/ (default bash)
 "
 
-#
-# create_c_header ()
+############################################################################
+##  create_c_header ()
 #
 
 create_c_header () {
 
     # Create a new header with inclusion guards
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_c_header() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_c_header() requires 7 arguments"
         return 1
     fi
 
@@ -73,6 +79,7 @@ create_c_header () {
         return 1
     fi
 
+
     if $struct ; then
 
         head -n -1 $fullpath > $fullpath'.tmp'
@@ -99,16 +106,16 @@ struct $name
     return
 }
 
-#
-# create_c_src ()
+############################################################################
+##  create_c_src ()
 #
 
 create_c_src () {
 
     # Create a new source file with corresponding header inclusion
 
-    if [[ $# != 9 ]] ; then
-        echo "error: create_c_src() requires 9 arguments"
+    if [[ $# != 10 ]] ; then
+        echo "error: create_c_src() requires 10 arguments"
         return 1
     fi
 
@@ -121,6 +128,7 @@ create_c_src () {
     no_header=$7
     main=$8
     main_args=$9
+    include_io=${10}
 
     filename=$4$'.'$2
     fullpath=$directory'/'$filename
@@ -143,9 +151,37 @@ create_c_src () {
         return 1
     fi
 
-    if $main ; then
+    if $include_io ; then
 
         if ! $no_header ; then
+            echo "" >> $fullpath
+        fi
+
+        case $extension in
+
+            c)
+                echo "\
+#include <stdio.h>"\
+                >> $fullpath
+            ;;
+
+            cc|cpp)
+                echo "\
+#include <iostream>"\
+                >> $fullpath
+            ;;
+
+            *)
+                echo "error: create_c_header() unrecognized filetype"
+                return 1
+            ;;
+
+        esac
+    fi
+
+    if $main ; then
+
+        if ! $no_header || $include_io ; then
             echo "" >> $fullpath
         fi
 
@@ -221,8 +257,8 @@ int main(int argc, char* argv[])"\
     return
 }
 
-#
-# create_sh_script ()
+############################################################################
+##  create_sh_script ()
 #
 
 create_sh_script () {
@@ -275,8 +311,8 @@ set -x"\
     return
 }
 
-#
-#   main
+############################################################################
+##  main
 #
 
 if [[ $# < 1 ]] ; then
@@ -300,7 +336,7 @@ esac
 # options
 
 genflags='fhq'
-cflags='Hm:stu'
+cflags='Him:stu'
 shflags='xb:'
 specflags=
 
@@ -314,6 +350,7 @@ quiet=false
 struct=false
 xtrace=false
 main=false
+include_io=false
 
 # option arguments
 
@@ -335,7 +372,6 @@ name="${filename%.*}"
 if [[ $extension == $filename ]] ; then
     extension=
 fi
-
 
 header_ext=
 src_ext=
@@ -523,6 +559,10 @@ while (($OPTIND <= $#)) ; do
                 header=true
             ;;
 
+            i)
+                include_io=true
+            ;;
+
             m)
                 main=true
                 main_args=$OPTARG
@@ -569,6 +609,7 @@ done
 
 if [[ $name == 'main' ]] ; then
     main=true
+    include_io=true
 fi
 
 # if no flag or extension was provided, set defaults
@@ -582,6 +623,10 @@ if ! $header && ! $src && ! $script ; then
                 header=true
             fi
 
+            if [[ $name == 'main' ]] ; then
+                include_io=true
+            fi
+
             src=true
         ;;
 
@@ -593,6 +638,10 @@ if ! $header && ! $src && ! $script ; then
 fi
 
 # messages for invalid options
+
+if ! $src && $include_io ; then
+    echo "warning: include io specified but no source file created"
+fi
 
 if ! $src && $main ; then
     echo "warning: main specified but no source file created"
@@ -616,7 +665,7 @@ if $src ; then
         no_header=$no_header_flag
     fi
 
-    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args $include_io
 
 fi
 
