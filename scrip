@@ -28,10 +28,13 @@ c, c++, sh
 -b          specify a different shell in /bin/ (default bash)
 "
 
+#
+# create_c_header ()
+#
+
 create_c_header () {
-    #
+
     # Create a new header with inclusion guards
-    #
 
     if [[ $# != 6 ]] ; then
         echo "error: create_c_header() requires 6 arguments"
@@ -96,13 +99,16 @@ struct $name
     return
 }
 
-create_c_src () {
-    #
-    # Create a new source file with corresponding header inclusion
-    #
+#
+# create_c_src ()
+#
 
-    if [[ $# != 8 ]] ; then
-        echo "error: create_c_src() requires 8 arguments"
+create_c_src () {
+
+    # Create a new source file with corresponding header inclusion
+
+    if [[ $# != 9 ]] ; then
+        echo "error: create_c_src() requires 9 arguments"
         return 1
     fi
 
@@ -114,6 +120,7 @@ create_c_src () {
     quiet=$6
     no_header=$7
     main=$8
+    main_args=$9
 
     filename=$4$'.'$2
     fullpath=$directory'/'$filename
@@ -123,7 +130,7 @@ create_c_src () {
         return 1
     fi
 
-    touch $fullpath
+    echo -n > $fullpath
 
     if ! $no_header ; then
         echo "\
@@ -142,8 +149,64 @@ create_c_src () {
             echo "" >> $fullpath
         fi
 
+        case $extension in
+
+            c)
+                case $main_args in
+
+                    v|vo|voi|void)
+                        echo "\
+int main(void)"\
+                        >> $fullpath
+                    ;;
+
+                    a|ar|arg|args)
+                        echo "\
+int main(int argc, char *argv[])"\
+                        >> $fullpath
+                    ;;
+
+                    *)
+                        echo "error: create_c_src() \$main_args not valid"
+                        return 1
+                    ;;
+
+                esac
+            ;;
+
+            cc|cpp)
+                case $main_args in
+
+                    v|vo|voi|void)
+                        echo "\
+int main()"\
+                        >> $fullpath
+                    ;;
+
+                    a|ar|arg|args)
+                        echo "\
+int main(int argc, char* argv[])"\
+                        >> $fullpath
+                    ;;
+
+                    *)
+                        echo "error: create_c_src() \$main_args not valid"
+                        return 1
+                    ;;
+
+                esac
+            ;;
+
+            *)
+                echo "error: create_c_src() extension not recognized"
+                return 1
+            ;;
+
+        esac
+
+        # body
+
         echo "\
-int main()
 {
     return 0;
 }"\
@@ -158,10 +221,13 @@ int main()
     return
 }
 
+#
+# create_sh_script ()
+#
+
 create_sh_script () {
-    #
+
     # Create a new .sh file with bash shebang and execute permission.
-    #
 
     if [[ $# != 7 ]] ; then
         echo "error: create_sh_script() requires 7 arguments"
@@ -231,7 +297,14 @@ case $1 in
 
 esac
 
-# boolean flags
+# options
+
+genflags='fhq'
+cflags='Hm:stu'
+shflags='xb:'
+specflags=
+
+# option flags flags
 
 header=false
 src=false
@@ -241,6 +314,11 @@ quiet=false
 struct=false
 xtrace=false
 main=false
+
+# option arguments
+
+shell='bash'
+main_args='void'
 
 # filenames
 
@@ -266,15 +344,6 @@ script_ext=
 header_filename=
 src_filename=
 script_filename=
-
-shell='bash'
-
-# flags
-
-genflags='fhq'
-cflags='Hmstu'
-shflags='xb:'
-specflags=
 
 # check filetype
 
@@ -431,6 +500,8 @@ script_fullpath=$directory'/'$script_filename
 
 flags_found=false
 
+no_header_flag=true
+
 while (($OPTIND <= $#)) ; do
 
     while getopts $genflags$specflags o ; do
@@ -448,11 +519,13 @@ while (($OPTIND <= $#)) ; do
             ;;
 
             H)
+                no_header_flag=false
                 header=true
             ;;
 
             m)
                 main=true
+                main_args=$OPTARG
             ;;
 
             q)
@@ -468,6 +541,7 @@ while (($OPTIND <= $#)) ; do
             ;;
 
             u)
+                no_header_flag=false
                 header=true
                 src=true
                 unit=true
@@ -503,13 +577,17 @@ if ! $header && ! $src && ! $script ; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
+
             if [[ $name != 'main' ]] ; then
                 header=true
             fi
-            src=true ;;
+
+            src=true
+        ;;
 
         sh)         # default shell: create script
-            script=true ;;
+            script=true
+        ;;
 
     esac
 fi
@@ -535,10 +613,10 @@ if $src ; then
     no_header=false
 
     if [[ $name == 'main' ]] ; then
-        no_header=true
+        no_header=$no_header_flag
     fi
 
-    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args
 
 fi
 
