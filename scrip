@@ -16,6 +16,7 @@ c, c++, sh
     General flags
 -f          force overwrite of existing files
 -q          quiet mode: don't list files created
+-e          open file(s) for editing
 --
     Specific flags
 
@@ -42,8 +43,8 @@ create_c_header () {
 
     # Create a new header with inclusion guards
 
-    if [[ $# != 7 ]] ; then
-        echo "error: create_c_header() requires 7 arguments"
+    if [[ $# != 6 ]] ; then
+        echo "error: create_c_header() requires 6 arguments"
         return 1
     fi
 
@@ -335,7 +336,7 @@ esac
 
 # options
 
-genflags='fhq'
+genflags='efhq'
 cflags='Him:stu'
 shflags='xb:'
 specflags=
@@ -351,6 +352,7 @@ struct=false
 xtrace=false
 main=false
 include_io=false
+open_editor=false
 
 # option arguments
 
@@ -550,6 +552,10 @@ while (($OPTIND <= $#)) ; do
                 shell=$OPTARG
             ;;
 
+            e)
+                open_editor=true
+            ;;
+
             f)
                 overwrite=true
             ;;
@@ -653,8 +659,12 @@ fi
 
 # file creation
 
+header_created=
+
 if $header ; then
     create_c_header $directory $header_ext $name $overwrite $quiet $struct
+
+    header_created=$directory'/'$name'.'$header_ext
 fi
 
 if $src ; then
@@ -667,12 +677,20 @@ if $src ; then
 
     create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args $include_io
 
+    src_created=$directory'/'$name'.'$src_ext
 fi
 
 if $script ; then
 
     create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace
 
+    script_created=$directory'/'$name'.'$script_ext
+fi
+
+set -x
+
+if $open_editor; then
+    vim $header_created $src_created $script_created
 fi
 
 # exit
