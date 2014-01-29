@@ -1,6 +1,6 @@
 #!/bin/bash
 
-###########################################################################
+#####################################################################
 ##  help
 #
 
@@ -30,12 +30,146 @@ c, c++, sh
 -t          create named struct
 -u          create pair of files for a compilation unit
 
+    md
+-c          table of contents (using markdown_py extension)
+
     sh
 -x          create file with xtrace set
 -b [shell]  specify a different shell in /bin/ (default bash)
 "
 
-############################################################################
+######################################################################
+##  make_title ()
+#
+
+make_title () {
+
+    # converts characters following whitespace or separators from
+    # lowercase to uppercase and replaces separators with whitespace
+    # separators are '-' and '_'
+
+    # return variable: string_out
+
+    string_in=$1
+
+    string_in_len=${#string_in}
+
+    last_char=
+    read_char=
+
+    string_out=
+
+    for i in $(seq 0 ${string_in_len-1}) ; do
+        read_char=${string_in:i:1}
+
+        case $last_char in
+
+            " "|""|-|_)
+                this_char="${read_char^}"
+            ;;
+
+            *)
+                this_char=$read_char
+            ;;
+
+        esac
+
+        case $this_char in
+
+            -|_)
+                this_char=" "
+            ;;
+
+            *)
+            ;;
+
+        esac
+
+        string_out=$string_out$this_char
+
+        last_char=$this_char
+    done
+
+    return
+}
+
+
+
+######################################################################
+##  create_markdown ()
+#
+
+create_markdown () {
+
+    # Create a new markdown file with title and optional table of contents
+
+    if [[ $# != 6 ]] ; then
+        echo "error: create_sh_script() requires 6 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    toc=$6
+
+    filename=$3$'.'$2
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    string_out=
+
+    make_title $name
+
+    title=$string_out   # string out from make_title()
+
+    title_len=${#title}
+
+    spacer_size=$[65-$title_len]
+    spacer=
+
+    for i in $(seq 1 $spacer_size) ; do
+        spacer="$spacer "
+    done
+
+    echo "\
+######################################################################
+#   $title$spacer#
+######################################################################
+"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $toc ; then
+        echo "\
+# Table of Contents #
+
+[TOC]
+"\
+        >> $fullpath
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
 ##  create_c_header ()
 #
 
@@ -107,7 +241,9 @@ struct $name
     return
 }
 
-############################################################################
+
+
+######################################################################
 ##  create_c_src ()
 #
 
@@ -258,7 +394,9 @@ int main(int argc, char* argv[])"\
     return
 }
 
-############################################################################
+
+
+######################################################################
 ##  create_sh_script ()
 #
 
@@ -312,7 +450,9 @@ set -x"\
     return
 }
 
-############################################################################
+
+
+######################################################################
 ##  main
 #
 
@@ -338,6 +478,7 @@ esac
 
 genflags='efhq'
 cflags='Him:stu'
+mdflags='c'
 shflags='xb:'
 specflags=
 
@@ -346,6 +487,7 @@ specflags=
 header=false
 src=false
 script=false
+markdown=false
 overwrite=false
 quiet=false
 struct=false
@@ -353,6 +495,7 @@ xtrace=false
 main=false
 include_io=false
 open_editor=false
+markdown_toc=false
 
 # option arguments
 
@@ -378,10 +521,12 @@ fi
 header_ext=
 src_ext=
 script_ext=
+markdown_ext=
 
 header_filename=
 src_filename=
 script_filename=
+markdown_filename=
 
 # check filetype
 
@@ -389,7 +534,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|sh)
+    c|c++|cc|cpp|sh|md)
         known_filetype=true
     ;;
 
@@ -462,6 +607,15 @@ case $extension in
         fi
     ;;
 
+    # md
+
+    md)
+        markdown=true
+        if ! $known_filetype ; then
+            filetype='md'
+        fi
+    ;;
+
     # sh
 
     sh)
@@ -511,6 +665,12 @@ case $filetype in
         specflags=$cflags
     ;;
 
+    md)
+        specflags=$mdflags
+        markdown=true
+        markdown_ext='md'
+    ;;
+
     sh)
         specflags=$shflags
         script=true
@@ -529,10 +689,12 @@ esac
 header_filename=$name'.'$header_ext
 src_filename=$name'.'$src_ext
 script_filename=$name'.'$script_ext
+markdown_filename=$name'.'$markdown_ext
 
 header_fullpath=$directory'/'$header_filename
 src_fullpath=$directory'/'$src_filename
 script_fullpath=$directory'/'$script_filename
+markdown_fullpath=$directory'/'$markdown_filename
 
 # process flags
 
@@ -550,6 +712,10 @@ while (($OPTIND <= $#)) ; do
 
             b)
                 shell=$OPTARG
+            ;;
+
+            c)
+                markdown_toc=true
             ;;
 
             e)
@@ -636,6 +802,10 @@ if ! $header && ! $src && ! $script ; then
             src=true
         ;;
 
+        md)         # default markdown: create markdown
+            markdown=true
+        ;;
+
         sh)         # default shell: create script
             script=true
         ;;
@@ -680,14 +850,19 @@ if $src ; then
     src_created=$directory'/'$name'.'$src_ext
 fi
 
+if $markdown ; then
+
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $markdown_toc
+    markdown_created=$directory'/'$name'.'$markdown_ext
+
+fi
+
 if $script ; then
 
     create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace
 
     script_created=$directory'/'$name'.'$script_ext
 fi
-
-set -x
 
 if $open_editor; then
     vim $header_created $src_created $script_created
