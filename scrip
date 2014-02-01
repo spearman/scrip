@@ -11,7 +11,7 @@ scrip <filename> [<filetype>] [flags]
 scrip -h, --help
 --
     Filetypes
-c, c++, sh
+c, c++, md, sh
 --
     General flags
 -f          force overwrite of existing files
