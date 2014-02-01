@@ -441,6 +441,11 @@ set -x"\
         >> $fullpath
     fi
 
+    echo "\
+
+exit"\
+    > $fullpath
+
     chmod +x $fullpath
 
     if ! $quiet ; then
