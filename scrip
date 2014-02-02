@@ -444,7 +444,7 @@ set -x"\
     echo "\
 
 exit"\
-    > $fullpath
+    >> $fullpath
 
     chmod +x $fullpath
 
