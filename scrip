@@ -32,10 +32,12 @@ c, c++, md, sh
 
     md
 -c          table of contents (using markdown_py extension)
+-n          no file extension
 
     sh
 -x          create file with xtrace set
 -b [shell]  specify a different shell in /bin/ (default bash)
+-n          no file extension
 "
 
 ######################################################################
@@ -103,8 +105,8 @@ create_markdown () {
 
     # Create a new markdown file with title and optional table of contents
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_sh_script() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_sh_script() requires 7 arguments"
         return 1
     fi
 
@@ -114,8 +116,14 @@ create_markdown () {
     overwrite=$4
     quiet=$5
     toc=$6
+    no_ext=$7
 
-    filename=$3$'.'$2
+    if no_ext ; then
+        filename=$3
+    else
+        filename=$3$'.'$2
+    fi
+
     fullpath=$directory'/'$filename
 
     if [[ -e $fullpath ]] && ! $overwrite ; then
@@ -404,8 +412,8 @@ create_sh_script () {
 
     # Create a new .sh file with bash shebang and execute permission.
 
-    if [[ $# != 7 ]] ; then
-        echo "error: create_sh_script() requires 7 arguments"
+    if [[ $# != 8 ]] ; then
+        echo "error: create_sh_script() requires 8 arguments"
         return 1
     fi
 
@@ -416,8 +424,14 @@ create_sh_script () {
     overwrite=$5
     quiet=$6
     xtrace=$7
+    no_ext=$8
 
-    filename=$4$'.'$2
+    if $no_ext ; then
+        filename=$4
+    else
+        filename=$4$'.'$2
+    fi
+
     fullpath=$directory'/'$filename
 
     if [[ -e $fullpath ]] && ! $overwrite ; then
@@ -483,8 +497,8 @@ esac
 
 genflags='efhq'
 cflags='Him:stu'
-mdflags='c'
-shflags='xb:'
+mdflags='csn'
+shflags='xb:sn'
 specflags=
 
 # option flags flags
@@ -501,6 +515,7 @@ main=false
 include_io=false
 open_editor=false
 markdown_toc=false
+no_ext=false
 
 # option arguments
 
@@ -745,6 +760,10 @@ while (($OPTIND <= $#)) ; do
                 main_args=$OPTARG
             ;;
 
+            n)
+                no_ext=true
+            ;;
+
             q)
                 quiet=true
             ;;
@@ -857,14 +876,14 @@ fi
 
 if $markdown ; then
 
-    create_markdown $directory $markdown_ext $name $overwrite $quiet $markdown_toc
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $markdown_toc $no_ext
     markdown_created=$directory'/'$name'.'$markdown_ext
 
 fi
 
 if $script ; then
 
-    create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace
+    create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace $no_ext
 
     script_created=$directory'/'$name'.'$script_ext
 fi
