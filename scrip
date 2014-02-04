@@ -161,7 +161,7 @@ create_markdown () {
 
     if $toc ; then
         echo "\
-# Table of Contents #
+## Table of Contents ##
 
 [TOC]
 "\
