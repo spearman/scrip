@@ -118,7 +118,7 @@ create_markdown () {
     toc=$6
     no_ext=$7
 
-    if no_ext ; then
+    if $no_ext ; then
         filename=$3
     else
         filename=$3$'.'$2
