@@ -11,7 +11,7 @@ scrip <filename> [<filetype>] [flags]
 scrip -h, --help
 --
     Filetypes
-c, c++, md, sh
+c, c++, hs, md, sh
 --
     General flags
 -f          force overwrite of existing files
@@ -29,6 +29,10 @@ c, c++, md, sh
 -s          create a source file
 -t          create named struct
 -u          create pair of files for a compilation unit
+
+    hs
+-i          import System.IO
+-m          create a main function within file
 
     md
 -c          table of contents (using markdown_py extension)
@@ -97,6 +101,79 @@ make_title () {
 
 
 
+
+######################################################################
+##  create_haskell_file ()
+#
+
+create_haskell_file () {
+
+    # Create a new .hs file with optional main function
+
+    if [[ $# != 7 ]] ; then
+        echo "error: create_haskell_file() requires 7 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    main=$6
+    include_io=$7
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+{---------------------------------------------------------------------
+$name
+---------------------------------------------------------------------}"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $include_io ; then
+        echo "\
+
+import System.IO"\
+        >> $fullpath
+    fi
+
+    if $main ; then
+        echo "\
+
+----------------------------------------------------------------------
+--  main
+----------------------------------------------------------------------
+
+main = do"\
+        >> $fullpath
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+
+
+
 ######################################################################
 ##  create_markdown ()
 #
@@ -106,7 +183,7 @@ create_markdown () {
     # Create a new markdown file with title and optional table of contents
 
     if [[ $# != 7 ]] ; then
-        echo "error: create_sh_script() requires 7 arguments"
+        echo "error: create_markdown() requires 7 arguments"
         return 1
     fi
 
@@ -497,6 +574,7 @@ esac
 
 genflags='efhq'
 cflags='Him:stu'
+hsflags='im'
 mdflags='csn'
 shflags='xb:sn'
 specflags=
@@ -505,6 +583,7 @@ specflags=
 
 header=false
 src=false
+haskell=false
 script=false
 markdown=false
 overwrite=false
@@ -512,6 +591,7 @@ quiet=false
 struct=false
 xtrace=false
 main=false
+hs_main=false
 include_io=false
 open_editor=false
 markdown_toc=false
@@ -540,11 +620,13 @@ fi
 
 header_ext=
 src_ext=
+haskell_ext=
 script_ext=
 markdown_ext=
 
 header_filename=
 src_filename=
+haskell_filename=
 script_filename=
 markdown_filename=
 
@@ -554,7 +636,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|sh|md)
+    c|c++|cc|cpp|hs|sh|md)
         known_filetype=true
     ;;
 
@@ -627,6 +709,14 @@ case $extension in
         fi
     ;;
 
+    # hs
+
+    hs)
+        if ! $known_filetype ; then
+            filetype='hs'
+        fi
+    ;;
+
     # md
 
     md)
@@ -685,6 +775,12 @@ case $filetype in
         specflags=$cflags
     ;;
 
+    hs)
+        specflags=$hsflags
+        haskell=true
+        haskell_ext='hs'
+    ;;
+
     md)
         specflags=$mdflags
         markdown=true
@@ -709,11 +805,13 @@ esac
 header_filename=$name'.'$header_ext
 src_filename=$name'.'$src_ext
 script_filename=$name'.'$script_ext
+haskell_filename=$name'.'$haskell_ext
 markdown_filename=$name'.'$markdown_ext
 
 header_fullpath=$directory'/'$header_filename
 src_fullpath=$directory'/'$src_filename
 script_fullpath=$directory'/'$script_filename
+haskell_fullpath=$directory'/'$haskell_filename
 markdown_fullpath=$directory'/'$markdown_filename
 
 # process flags
@@ -756,8 +854,19 @@ while (($OPTIND <= $#)) ; do
             ;;
 
             m)
-                main=true
-                main_args=$OPTARG
+                case $filetype in
+                    c|c++|cc|cpp)
+                        main=true
+                        main_args=$OPTARG
+                    ;;
+                    hs)
+                        hs_main=true
+                    ;;
+                    *)
+                        echo "error: option 'm' invalid for filetype"
+                        exit 1
+                    ;;
+                esac
             ;;
 
             n)
@@ -804,13 +913,14 @@ done
 # catch main
 
 if [[ $name == 'main' ]] ; then
+    hs_main=true
     main=true
     include_io=true
 fi
 
 # if no flag or extension was provided, set defaults
 
-if ! $header && ! $src && ! $script ; then
+if ! $header && ! $src && ! $script && ! $haskell ; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
@@ -826,6 +936,10 @@ if ! $header && ! $src && ! $script ; then
             src=true
         ;;
 
+        hs)         # default haskell: create file with main
+            hs_main=true
+        ;;
+
         md)         # default markdown: create markdown
             markdown=true
         ;;
@@ -839,7 +953,7 @@ fi
 
 # messages for invalid options
 
-if ! $src && $include_io ; then
+if ! $src && ! $haskell && $include_io ; then
     echo "warning: include io specified but no source file created"
 fi
 
@@ -872,6 +986,10 @@ if $src ; then
     create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args $include_io
 
     src_created=$directory'/'$name'.'$src_ext
+fi
+
+if $haskell ; then
+    create_haskell_file $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io
 fi
 
 if $markdown ; then
