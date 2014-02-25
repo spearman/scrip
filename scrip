@@ -11,7 +11,7 @@ scrip <filename> [<filetype>] [flags]
 scrip -h, --help
 --
     Filetypes
-c, c++, hs, md, sh
+c, c++, hs, md, sh, tex
 --
     General flags
 -f          force overwrite of existing files
@@ -42,215 +42,12 @@ c, c++, hs, md, sh
 -x          create file with xtrace set
 -b [shell]  specify a different shell in /bin/ (default bash)
 -n          no file extension
+
+    tex
+-c          table of contents
+-d          include date in title
+-t          title from filename
 "
-
-######################################################################
-##  make_title ()
-#
-
-make_title () {
-
-    # converts characters following whitespace or separators from
-    # lowercase to uppercase and replaces separators with whitespace
-    # separators are '-' and '_'
-
-    # return variable: string_out
-
-    string_in=$1
-
-    string_in_len=${#string_in}
-
-    last_char=
-    read_char=
-
-    string_out=
-
-    for i in $(seq 0 ${string_in_len-1}) ; do
-        read_char=${string_in:i:1}
-
-        case $last_char in
-
-            " "|""|-|_)
-                this_char="${read_char^}"
-            ;;
-
-            *)
-                this_char=$read_char
-            ;;
-
-        esac
-
-        case $this_char in
-
-            -|_)
-                this_char=" "
-            ;;
-
-            *)
-            ;;
-
-        esac
-
-        string_out=$string_out$this_char
-
-        last_char=$this_char
-    done
-
-    return
-}
-
-
-
-
-######################################################################
-##  create_haskell_file ()
-#
-
-create_haskell_file () {
-
-    # Create a new .hs file with optional main function
-
-    if [[ $# != 7 ]] ; then
-        echo "error: create_haskell_file() requires 7 arguments"
-        return 1
-    fi
-
-    directory=$1
-    extension=$2
-    name=$3
-    overwrite=$4
-    quiet=$5
-    main=$6
-    include_io=$7
-
-    filename=$3$'.'$2
-
-    fullpath=$directory'/'$filename
-
-    if [[ -e $fullpath ]] && ! $overwrite ; then
-        echo "error: $fullpath already exists, use -f to overwrite"
-        return 1
-    fi
-
-    echo "\
-{---------------------------------------------------------------------
-$name
----------------------------------------------------------------------}"\
-    > $fullpath
-
-    if [[ !(-e $fullpath) ]]
-    then
-        echo "error: file not created"
-        return 1
-    fi
-
-    if $include_io ; then
-        echo "\
-
-import System.IO"\
-        >> $fullpath
-    fi
-
-    if $main ; then
-        echo "\
-
-----------------------------------------------------------------------
---  main
-----------------------------------------------------------------------
-
-main = do"\
-        >> $fullpath
-    fi
-
-    if ! $quiet ; then
-        echo "created file $fullpath"
-    fi
-
-    return
-}
-
-
-
-
-
-
-######################################################################
-##  create_markdown ()
-#
-
-create_markdown () {
-
-    # Create a new markdown file with title and optional table of contents
-
-    if [[ $# != 7 ]] ; then
-        echo "error: create_markdown() requires 7 arguments"
-        return 1
-    fi
-
-    directory=$1
-    extension=$2
-    name=$3
-    overwrite=$4
-    quiet=$5
-    toc=$6
-    no_ext=$7
-
-    if $no_ext ; then
-        filename=$3
-    else
-        filename=$3$'.'$2
-    fi
-
-    fullpath=$directory'/'$filename
-
-    if [[ -e $fullpath ]] && ! $overwrite ; then
-        echo "error: $fullpath already exists, use -f to overwrite"
-        return 1
-    fi
-
-    string_out=
-
-    make_title $name
-
-    title=$string_out   # string out from make_title()
-
-    title_len=${#title}
-
-    spacer_size=$[65-$title_len]
-    spacer=
-
-    for i in $(seq 1 $spacer_size) ; do
-        spacer="$spacer "
-    done
-
-    echo "\
-######################################################################
-#   $title$spacer#
-######################################################################
-"\
-    > $fullpath
-
-    if [[ !(-e $fullpath) ]]
-    then
-        echo "error: file not created"
-        return 1
-    fi
-
-    if $toc ; then
-        echo "\
-## Table of Contents ##
-
-[TOC]
-"\
-        >> $fullpath
-    fi
-
-    if ! $quiet ; then
-        echo "created file $fullpath"
-    fi
-
-    return
-}
 
 
 
@@ -482,6 +279,254 @@ int main(int argc, char* argv[])"\
 
 
 ######################################################################
+##  create_haskell_file ()
+#
+
+create_haskell_file () {
+
+    # Create a new .hs file with optional main function
+
+    if [[ $# != 7 ]] ; then
+        echo "error: create_haskell_file() requires 7 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    main=$6
+    include_io=$7
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+{---------------------------------------------------------------------
+$name
+---------------------------------------------------------------------}"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $include_io ; then
+        echo "\
+
+import System.IO"\
+        >> $fullpath
+    fi
+
+    if $main ; then
+        echo "\
+
+----------------------------------------------------------------------
+--  main
+----------------------------------------------------------------------
+
+main = do"\
+        >> $fullpath
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
+##  create_latex ()
+#
+
+create_latex () {
+
+    # Create a new latex file with title and optional table of contents
+
+    if [[ $# != 8 ]] ; then
+        echo "error: create_latex() requires 8 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    toc=$6
+    title=$7
+    show_date=$8
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    date=""
+
+    if $show_date ; then
+        date="\\today"
+    fi
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\\documentclass{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\\begin{document}
+"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $title ; then
+
+        string_out=
+
+        make_title $name
+
+        title=$string_out   # string out from make_title()
+
+        echo "\
+% --------------------------------------------------------------------
+
+\\title{$title}
+\\date{$date}
+\\maketitle
+"\
+        >> $fullpath
+
+    fi
+
+    if $toc ; then
+        echo "\
+% --------------------------------------------------------------------
+
+\\tableofcontents
+"\
+        >> $fullpath
+    fi
+
+    echo "\
+% --------------------------------------------------------------------
+
+\\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"\
+    >> $fullpath
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
+##  create_markdown ()
+#
+
+create_markdown () {
+
+    # Create a new markdown file with title and optional table of contents
+
+    if [[ $# != 7 ]] ; then
+        echo "error: create_markdown() requires 7 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    toc=$6
+    no_ext=$7
+
+    if $no_ext ; then
+        filename=$3
+    else
+        filename=$3$'.'$2
+    fi
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    string_out=
+
+    make_title $name
+
+    title=$string_out   # string out from make_title()
+
+    title_len=${#title}
+
+    spacer_size=$[65-$title_len]
+    spacer=
+
+    for i in $(seq 1 $spacer_size) ; do
+        spacer="$spacer "
+    done
+
+    echo "\
+######################################################################
+#   $title$spacer#
+######################################################################
+"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $toc ; then
+        echo "\
+## Table of Contents ##
+
+[TOC]
+"\
+        >> $fullpath
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
 ##  create_sh_script ()
 #
 
@@ -549,6 +594,63 @@ exit"\
 
 
 ######################################################################
+##  make_title ()
+#
+
+make_title () {
+
+    # converts characters following whitespace or separators from
+    # lowercase to uppercase and replaces separators with whitespace
+    # separators are '-' and '_'
+
+    # return variable: string_out
+
+    string_in=$1
+
+    string_in_len=${#string_in}
+
+    last_char=
+    read_char=
+
+    string_out=
+
+    for i in $(seq 0 ${string_in_len-1}) ; do
+        read_char=${string_in:i:1}
+
+        case $last_char in
+
+            " "|""|-|_)
+                this_char="${read_char^}"
+            ;;
+
+            *)
+                this_char=$read_char
+            ;;
+
+        esac
+
+        case $this_char in
+
+            -|_)
+                this_char=" "
+            ;;
+
+            *)
+            ;;
+
+        esac
+
+        string_out=$string_out$this_char
+
+        last_char=$this_char
+    done
+
+    return
+}
+
+
+
+######################################################################
 ##  main
 #
 
@@ -577,6 +679,7 @@ cflags='Him:stu'
 hsflags='im'
 mdflags='csn'
 shflags='xb:sn'
+texflags='cdt'
 specflags=
 
 # option flags flags
@@ -586,16 +689,19 @@ src=false
 haskell=false
 script=false
 markdown=false
+latex=false
 overwrite=false
 quiet=false
 struct=false
+latex_title=false
 xtrace=false
 main=false
 hs_main=false
 include_io=false
 open_editor=false
-markdown_toc=false
+table_of_contents=false
 no_ext=false
+latex_date=false
 
 # option arguments
 
@@ -623,12 +729,14 @@ src_ext=
 haskell_ext=
 script_ext=
 markdown_ext=
+latex_ext=
 
 header_filename=
 src_filename=
 haskell_filename=
 script_filename=
 markdown_filename=
+latex_filename=
 
 # check filetype
 
@@ -636,7 +744,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|hs|sh|md)
+    c|c++|cc|cpp|hs|md|sh|tex)
         known_filetype=true
     ;;
 
@@ -735,6 +843,15 @@ case $extension in
         fi
     ;;
 
+    # tex
+
+    tex)
+        latex=true
+        if ! $known_filetype ; then
+            filetype='tex'
+        fi
+    ;;
+
     *)
     ;;
 
@@ -793,6 +910,12 @@ case $filetype in
         script_ext='sh'
     ;;
 
+    tex)
+        specflags=$texflags
+        latex=true
+        latex_ext='tex'
+    ;;
+
     *)
         echo "error: could not determine filetype"
         exit 1
@@ -804,15 +927,17 @@ esac
 
 header_filename=$name'.'$header_ext
 src_filename=$name'.'$src_ext
-script_filename=$name'.'$script_ext
 haskell_filename=$name'.'$haskell_ext
 markdown_filename=$name'.'$markdown_ext
+script_filename=$name'.'$script_ext
+latex_filename=$name'.'$latex_ext
 
 header_fullpath=$directory'/'$header_filename
 src_fullpath=$directory'/'$src_filename
-script_fullpath=$directory'/'$script_filename
 haskell_fullpath=$directory'/'$haskell_filename
 markdown_fullpath=$directory'/'$markdown_filename
+script_fullpath=$directory'/'$script_filename
+latex_fullpath=$directory'/'$latex_filename
 
 # process flags
 
@@ -833,7 +958,11 @@ while (($OPTIND <= $#)) ; do
             ;;
 
             c)
-                markdown_toc=true
+                table_of_contents=true
+            ;;
+
+            d)
+                latex_date=true
             ;;
 
             e)
@@ -882,7 +1011,18 @@ while (($OPTIND <= $#)) ; do
             ;;
 
             t)
-                struct=true
+                case $filetype in
+                    c|c++|cc|cpp)
+                        struct=true
+                    ;;
+                    tex)
+                        latex_title=true
+                    ;;
+                    *)
+                        echo "error: option 't' invalid for filetype"
+                        exit 1
+                    ;;
+                esac
             ;;
 
             u)
@@ -965,6 +1105,10 @@ if ! $header && $struct ; then
     echo "ignoring -t struct: no header file created"
 fi
 
+if $latex && ! $latex_title && $latex_date ; then
+    echo "ignoring -d date: title not specified"
+fi
+
 # file creation
 
 header_created=
@@ -990,12 +1134,19 @@ fi
 
 if $haskell ; then
     create_haskell_file $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io
+
+    haskell_created=$directory'/'$name'.'$haskell_ext
 fi
 
 if $markdown ; then
 
-    create_markdown $directory $markdown_ext $name $overwrite $quiet $markdown_toc $no_ext
-    markdown_created=$directory'/'$name'.'$markdown_ext
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $table_of_contents $no_ext
+
+    if $no_ext ; then
+        markdown_created=$directory'/'$name
+    else
+        markdown_created=$directory'/'$name'.'$markdown_ext
+    fi
 
 fi
 
@@ -1003,11 +1154,24 @@ if $script ; then
 
     create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace $no_ext
 
-    script_created=$directory'/'$name'.'$script_ext
+    if $no_ext ; then
+        script_created=$directory'/'$name
+    else
+        script_created=$directory'/'$name'.'$script_ext
+    fi
+
+fi
+
+if $latex ; then
+
+    create_latex $directory $latex_ext $name $overwrite $quiet $table_of_contents $latex_title $latex_date
+
+    latex_created=$directory'/'$name'.'$latex_ext
+
 fi
 
 if $open_editor; then
-    vim $header_created $src_created $script_created
+    vim $header_created $src_created $script_created $markdown_created $haskell_created $latex_created
 fi
 
 # exit
