@@ -1,2 +1,2 @@
-- settings file for default editor setting
-- py, hs filetypes
+- settings file for default editor (currently opens with vim)
+- py filetype
