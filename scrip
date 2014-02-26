@@ -1097,7 +1097,7 @@ if ! $src && ! $haskell && $include_io ; then
     echo "warning: include io specified but no source file created"
 fi
 
-if ! $src && $main ; then
+if ! $src && ! $haskell && $main ; then
     echo "warning: main specified but no source file created"
 fi
 
