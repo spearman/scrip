@@ -232,7 +232,7 @@ int main(int argc, char *argv[])"\
             cc|cpp)
                 case $main_args in
 
-                    v|vo|voi|void)
+                    ""|v|vo|voi|void)
                         echo "\
 int main()"\
                         >> $fullpath
@@ -675,7 +675,7 @@ esac
 # options
 
 genflags='efhq'
-cflags='Him:stu'
+cflags='Himm:stu'
 hsflags='im'
 mdflags='csn'
 shflags='xb:sn'
