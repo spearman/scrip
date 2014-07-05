@@ -1,2 +1,3 @@
 - settings file for default editor (currently opens with vim)
 - py filetype
+- texi support
