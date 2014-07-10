@@ -35,7 +35,6 @@ c, c++, hs, md, sh, tex
 -m          create a main function within file
 
     md
--c          table of contents (using markdown_py extension)
 -n          no file extension
 
     sh
@@ -452,9 +451,9 @@ create_latex () {
 
 create_markdown () {
 
-    # Create a new markdown file with title and optional table of contents
+    # Create a new markdown file with title
 
-    if [[ $# != 7 ]] ; then
+    if [[ $# != 6 ]] ; then
         echo "error: create_markdown() requires 7 arguments"
         return 1
     fi
@@ -464,8 +463,7 @@ create_markdown () {
     name=$3
     overwrite=$4
     quiet=$5
-    toc=$6
-    no_ext=$7
+    no_ext=$6
 
     if $no_ext ; then
         filename=$3
@@ -496,9 +494,15 @@ create_markdown () {
     done
 
     echo "\
-######################################################################
-#   $title$spacer#
-######################################################################
+% $title$
+%
+%
+
+**********************************************************************
+**********************************************************************
+#   $title$
+
+**********************************************************************
 "\
     > $fullpath
 
@@ -506,15 +510,6 @@ create_markdown () {
     then
         echo "error: file not created"
         return 1
-    fi
-
-    if $toc ; then
-        echo "\
-## Table of Contents ##
-
-[TOC]
-"\
-        >> $fullpath
     fi
 
     if ! $quiet ; then
