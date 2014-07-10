@@ -1135,7 +1135,7 @@ fi
 
 if $markdown ; then
 
-    create_markdown $directory $markdown_ext $name $overwrite $quiet $table_of_contents $no_ext
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $no_ext
 
     if $no_ext ; then
         markdown_created=$directory'/'$name
