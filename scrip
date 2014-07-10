@@ -454,7 +454,7 @@ create_markdown () {
     # Create a new markdown file with title
 
     if [[ $# != 6 ]] ; then
-        echo "error: create_markdown() requires 7 arguments"
+        echo "error: create_markdown() requires 6 arguments"
         return 1
     fi
 
@@ -494,13 +494,13 @@ create_markdown () {
     done
 
     echo "\
-% $title$
+% $title
 %
 %
 
 **********************************************************************
 **********************************************************************
-#   $title$
+#   $title
 
 **********************************************************************
 "\
