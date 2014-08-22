@@ -12,7 +12,7 @@ Usage:
     scrip -h, --help
 
 Filetypes
-    c, c++, hs, html, md, sh, tex
+    c, c++, hs, html/css, md, sh, tex
 
 General flags
     -f          force overwrite of existing files
@@ -37,9 +37,11 @@ hs
 
 html
     -t          formatted title from filename
+    -l          link element for local style.css
 
 md
     -n          no file extension
+    -l          link element for local style.css
 
 sh
     -x          create file with xtrace set
@@ -358,8 +360,8 @@ create_html () {
 
     # Create a new html file with optional title
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_html() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_html() requires 7 arguments"
         return 1
     fi
 
@@ -369,6 +371,7 @@ create_html () {
     overwrite=$4
     quiet=$5
     title_from_filename=$6
+    link_stylecss=$7
 
     filename=$3$'.'$2
 
@@ -393,13 +396,22 @@ create_html () {
     <head>
         <meta charset=\"utf-8\" />
         <title>$title</title>
+"\
+    > $fullpath
+
+    if $link_stylecss ; then
+        echo "        <link rel=\"stylesheet\" href=\"style.css />"\
+         >> $fullpath
+    fi
+
+    echo "\
     </head>
 
     <body>
     </body>
-</html
+</html>
 "\
-    > $fullpath
+    >> $fullpath
 
     if [[ !(-e $fullpath) ]]
     then
@@ -523,8 +535,8 @@ create_markdown () {
 
     # Create a new markdown file with title
 
-    if [[ $# != 6 ]] ; then
-        echo "error: create_markdown() requires 6 arguments"
+    if [[ $# != 7 ]] ; then
+        echo "error: create_markdown() requires 7 arguments"
         return 1
     fi
 
@@ -534,6 +546,7 @@ create_markdown () {
     overwrite=$4
     quiet=$5
     no_ext=$6
+    link_stylecss=$7
 
     if $no_ext ; then
         filename=$3
@@ -567,7 +580,17 @@ create_markdown () {
 % $title
 %
 %
+"\
+    > $fullpath
 
+    if $link_stylecss ; then
+        echo "\
+<link rel=\"stylesheet\" href=\"style.css />
+"\
+        >> $fullpath
+    fi
+
+    echo "\
 **********************************************************************
 **********************************************************************
 #   $title
@@ -575,7 +598,7 @@ create_markdown () {
 **********************************************************************
 **********************************************************************
 "\
-    > $fullpath
+    >> $fullpath
 
     if [[ !(-e $fullpath) ]]
     then
@@ -743,8 +766,8 @@ esac
 genflags='efhq'
 cflags='Himm:stu'
 hsflags='im'
-htmlflags='t'
-mdflags='csn'
+htmlflags='tl'
+mdflags='csnl'
 shflags='xb:sn'
 texflags='cdt'
 specflags=
@@ -774,6 +797,7 @@ quiet=false
 struct=false
 table_of_contents=false
 xtrace=false
+link_stylecss=false
 
 # option arguments
 
@@ -1077,6 +1101,10 @@ while (($OPTIND <= $#)) ; do
                 include_io=true
             ;;
 
+            l)
+                link_stylecss=true
+            ;;
+
             m)
                 case $filetype in
                     c|c++|cc|cpp)
@@ -1237,14 +1265,14 @@ if $haskell ; then
 fi
 
 if $html ; then
-    create_html $directory $html_ext $name $overwrite $quiet $html_title
+    create_html $directory $html_ext $name $overwrite $quiet $html_title $link_stylecss
 
     html_created=$directory'/'$name'.'$html_ext
 fi
 
 if $markdown ; then
 
-    create_markdown $directory $markdown_ext $name $overwrite $quiet $no_ext
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $no_ext $link_stylecss
 
     if $no_ext ; then
         markdown_created=$directory'/'$name
