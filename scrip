@@ -34,6 +34,7 @@ c, c++
 hs
     -i          import System.IO
     -m          create a main function within file
+    -M          module line
 
 html
     -t          formatted title from filename
@@ -291,8 +292,8 @@ create_haskell_source () {
 
     # Create a new .hs file with optional main function
 
-    if [[ $# != 7 ]] ; then
-        echo "error: create_haskell_source() requires 7 arguments"
+    if [[ $# != 8 ]] ; then
+        echo "error: create_haskell_source() requires 8 arguments"
         return 1
     fi
 
@@ -303,6 +304,7 @@ create_haskell_source () {
     quiet=$5
     main=$6
     include_io=$7
+    module=$8
 
     filename=$3$'.'$2
 
@@ -323,6 +325,13 @@ $name
     then
         echo "error: file not created"
         return 1
+    fi
+
+    if $module ; then
+        echo "\
+
+module $name where"\
+        >> $fullpath
     fi
 
     if $include_io ; then
@@ -765,7 +774,7 @@ esac
 
 genflags='efhq'
 cflags='Himm:stu'
-hsflags='im'
+hsflags='imM'
 htmlflags='tl'
 mdflags='csnl'
 shflags='xb:sn'
@@ -798,6 +807,7 @@ struct=false
 table_of_contents=false
 xtrace=false
 link_stylecss=false
+module=false
 
 # option arguments
 
@@ -1121,6 +1131,10 @@ while (($OPTIND <= $#)) ; do
                 esac
             ;;
 
+            M)
+                module=true
+            ;;
+
             n)
                 no_ext=true
             ;;
@@ -1259,7 +1273,7 @@ if $src ; then
 fi
 
 if $haskell ; then
-    create_haskell_source $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io
+    create_haskell_source $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io $module
 
     haskell_created=$directory'/'$name'.'$haskell_ext
 fi
