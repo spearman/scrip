@@ -328,9 +328,11 @@ $name
     fi
 
     if $module ; then
+        name_upper=$(echo "${name[@]^}")
+
         echo "\
 
-module $name where"\
+module $name_upper where"\
         >> $fullpath
     fi
 
