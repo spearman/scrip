@@ -596,7 +596,7 @@ create_markdown () {
 
     if $link_stylecss ; then
         echo "\
-<link rel=\"stylesheet\" href=\"style.css />
+<link rel=\"stylesheet\" href=\"style.css\" />
 "\
         >> $fullpath
     fi
