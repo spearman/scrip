@@ -43,6 +43,7 @@ html
 md
     -n          no file extension
     -l          link element for local style.css
+    -R          template software requirement specification document
 
 sh
     -x          create file with xtrace set
@@ -546,7 +547,7 @@ create_markdown () {
 
     # Create a new markdown file with title
 
-    if [[ $# != 7 ]] ; then
+    if [[ $# != 8 ]] ; then
         echo "error: create_markdown() requires 7 arguments"
         return 1
     fi
@@ -558,6 +559,7 @@ create_markdown () {
     quiet=$5
     no_ext=$6
     link_stylecss=$7
+    link_stylecss=$8
 
     if $no_ext ; then
         filename=$3
@@ -601,7 +603,89 @@ create_markdown () {
         >> $fullpath
     fi
 
-    echo "\
+    if $requirements ; then
+
+        echo "\
+**********************************************************************
+**********************************************************************
+#   Outline
+
+**********************************************************************
+**********************************************************************
+
+- Customer
+- Architecture
+- Structural
+- Behavioral
+- Non-functional
+- Performance
+- Design
+- Derived
+- Allocated
+
+
+
+**********************************************************************
+**********************************************************************
+#   Introduction
+
+**********************************************************************
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+##  Purpose
+
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+##  Definitions
+
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+##  System overview
+
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+##  References
+
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+#   Overall description
+
+**********************************************************************
+**********************************************************************
+
+
+
+**********************************************************************
+**********************************************************************
+#   Specific requirements
+
+**********************************************************************
+**********************************************************************"\
+        >> $fullpath
+
+    else
+
+        echo "\
 **********************************************************************
 **********************************************************************
 #   $title
@@ -609,7 +693,8 @@ create_markdown () {
 **********************************************************************
 **********************************************************************
 "\
-    >> $fullpath
+        >> $fullpath
+    fi
 
     if [[ !(-e $fullpath) ]]
     then
@@ -778,7 +863,7 @@ genflags='efhq'
 cflags='Himm:stu'
 hsflags='imM'
 htmlflags='tl'
-mdflags='csnl'
+mdflags='csnlR'
 shflags='xb:sn'
 texflags='cdt'
 specflags=
@@ -800,16 +885,17 @@ html_title=false
 include_io=false
 latex_date=false
 latex_title=false
+link_stylecss=false
 main=false
+module=false
 no_ext=false
 open_editor=false
 overwrite=false
 quiet=false
+requirements=false
 struct=false
 table_of_contents=false
 xtrace=false
-link_stylecss=false
-module=false
 
 # option arguments
 
@@ -1145,6 +1231,10 @@ while (($OPTIND <= $#)) ; do
                 quiet=true
             ;;
 
+            R)
+                requirements=true
+            ;;
+
             s)
                 src=true
             ;;
@@ -1288,7 +1378,7 @@ fi
 
 if $markdown ; then
 
-    create_markdown $directory $markdown_ext $name $overwrite $quiet $no_ext $link_stylecss
+    create_markdown $directory $markdown_ext $name $overwrite $quiet $no_ext $link_stylecss $requirements
 
     if $no_ext ; then
         markdown_created=$directory'/'$name
