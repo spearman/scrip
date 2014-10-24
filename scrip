@@ -549,7 +549,7 @@ create_markdown () {
     # Create a new markdown file with title
 
     if [[ $# != 8 ]] ; then
-        echo "error: create_markdown() requires 7 arguments"
+        echo "error: create_markdown() requires 8 arguments"
         return 1
     fi
 
@@ -560,7 +560,7 @@ create_markdown () {
     quiet=$5
     no_ext=$6
     link_stylecss=$7
-    link_stylecss=$8
+    requirements=$8
 
     if $no_ext ; then
         filename=$3
