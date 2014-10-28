@@ -241,7 +241,7 @@ int main(int argc, char *argv[])"\
             cc|cpp)
                 case $main_args in
 
-                    ""|v|vo|voi|void)
+                    v|vo|voi|void)
                         echo "\
 int main()"\
                         >> $fullpath
@@ -1369,10 +1369,16 @@ while (($OPTIND <= $#)) ; do
                     c|c++|cc|cpp)
                         main=true
                         main_args=$OPTARG
+
+                        if [[ $main_args == "" ]] ; then
+                            main_args="void"
+                        fi
                     ;;
+
                     hs)
                         hs_main=true
                     ;;
+
                     *)
                         echo "error: option 'm' invalid for filetype"
                         exit 1
