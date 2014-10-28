@@ -12,7 +12,7 @@ Usage:
     scrip -h, --help
 
 Filetypes
-    c, c++, hs, html/css, md, sh, tex
+    c, c++, hs, html/css, md, sh, tex, texi
 
 General flags
     -f          force overwrite of existing files
@@ -54,6 +54,8 @@ tex
     -c          table of contents
     -d          include date in title
     -t          title from filename
+
+texi
 "
 
 
@@ -780,6 +782,144 @@ exit"\
 
 
 ######################################################################
+##  create_texinfo ()
+#
+
+create_texinfo () {
+
+    if [[ $# != 5 ]] ; then
+        echo "error: create_texinfo() requires 5 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    string_out=
+
+    make_title $name
+
+    title=$string_out   # string out from make_title()
+
+    echo "\
+@c -------------------------------------------------------------------
+@c -------------------------------------------------------------------
+@c
+@c  $title
+@c
+@c -------------------------------------------------------------------
+@c -------------------------------------------------------------------
+
+
+
+@c -------------------------------------------------------------------
+@c  Header
+@c -------------------------------------------------------------------
+
+\input texinfo
+@setfilename $name.info
+@settitle $title
+
+
+
+@c -------------------------------------------------------------------
+@c  Summary & Copyright
+@c -------------------------------------------------------------------
+
+@copying
+
+@c summary here
+
+@copyright{} @c copyright here
+@end copying
+
+
+
+@c -------------------------------------------------------------------
+@c  Titlepage, Contents, Copyright
+@c -------------------------------------------------------------------
+
+@titlepage
+@title $title
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+
+
+@c -------------------------------------------------------------------
+@c  \`Top\` Node & Master Menu
+@c -------------------------------------------------------------------
+
+@ifnottex
+@node Top
+@top $title Top Node
+
+@c node description here
+@end ifnottex
+
+@menu
+Main Menu
+
+@c main menu entries here
+
+* Index::    $title Index
+@end menu
+
+
+
+@c -------------------------------------------------------------------
+@c  Body
+@c -------------------------------------------------------------------
+
+
+
+@c -------------------------------------------------------------------
+@c  End
+@c -------------------------------------------------------------------
+
+@c -------------------------------------------------------------------
+@node Index
+@unnumbered Index
+@c -------------------------------------------------------------------
+
+@printindex cp
+
+@c -------------------------------------------------------------------
+
+@bye"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
 ##  make_title ()
 #
 
@@ -860,24 +1000,27 @@ esac
 
 # options
 
-genflags='efhq'
 cflags='Himm:stu'
+genflags='efhq'
 hsflags='imM'
 htmlflags='tl'
 mdflags='csnlR'
 shflags='xb:sn'
 texflags='cdt'
+texiflags=
+
 specflags=
 
 # file output flags
 
-header=false
-src=false
 haskell=false
-script=false
-markdown=false
-latex=false
+header=false
 html=false
+latex=false
+markdown=false
+script=false
+src=false
+texinfo=false
 
 # option flags flags
 
@@ -919,21 +1062,23 @@ if [[ $extension == $filename ]] ; then
     extension=
 fi
 
-header_ext=
-src_ext=
 haskell_ext=
-script_ext=
-markdown_ext=
-latex_ext=
+header_ext=
 html_ext=
+latex_ext=
+markdown_ext=
+script_ext=
+src_ext=
+texinfo_ext=
 
-header_filename=
-src_filename=
 haskell_filename=
-script_filename=
-markdown_filename=
-latex_filename=
+header_filename=
 html_filename=
+latex_filename=
+markdown_filename=
+script_filename=
+src_filename=
+texinfo_filename=
 
 # check filetype
 
@@ -941,7 +1086,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|hs|htm|html|md|sh|tex)
+    c|c++|cc|cpp|hs|htm|html|md|sh|tex|texi)
         known_filetype=true
     ;;
 
@@ -1057,6 +1202,15 @@ case $extension in
         fi
     ;;
 
+    # texi
+
+    texi)
+        texinfo=true
+        if ! $known_filetype ; then
+            filetype='texi'
+        fi
+    ;;
+
     *)
     ;;
 
@@ -1132,6 +1286,12 @@ case $filetype in
         latex_ext='tex'
     ;;
 
+    texi)
+        specflags=$texiflags
+        texinfo=true
+        texinfo_ext='texi'
+    ;;
+
     *)
         echo "error: could not determine filetype"
         exit 1
@@ -1141,21 +1301,21 @@ esac
 
 # filenames
 
-header_filename=$name'.'$header_ext
-src_filename=$name'.'$src_ext
 haskell_filename=$name'.'$haskell_ext
+header_filename=$name'.'$header_ext
+html_filename=$name'.'$html_ext
+latex_filename=$name'.'$latex_ext
 markdown_filename=$name'.'$markdown_ext
 script_filename=$name'.'$script_ext
-latex_filename=$name'.'$latex_ext
-html_filename=$name'.'$html_ext
+src_filename=$name'.'$src_ext
 
-header_fullpath=$directory'/'$header_filename
-src_fullpath=$directory'/'$src_filename
 haskell_fullpath=$directory'/'$haskell_filename
+header_fullpath=$directory'/'$header_filename
+html_fullpath=$directory'/'$html_filename
+latex_fullpath=$directory'/'$latex_filename
 markdown_fullpath=$directory'/'$markdown_filename
 script_fullpath=$directory'/'$script_filename
-latex_fullpath=$directory'/'$latex_filename
-html_fullpath=$directory'/'$html_filename
+src_fullpath=$directory'/'$src_filename
 
 # process flags
 
@@ -1406,6 +1566,14 @@ if $latex ; then
     create_latex $directory $latex_ext $name $overwrite $quiet $table_of_contents $latex_title $latex_date
 
     latex_created=$directory'/'$name'.'$latex_ext
+
+fi
+
+if $texinfo ; then
+
+    create_texinfo $directory $texinfo_ext $name $overwrite $quiet
+
+    texinfo_created=$directory'/'$name'.'$texinfo_ext
 
 fi
 
