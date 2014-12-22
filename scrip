@@ -220,13 +220,13 @@ create_c_src () {
 
                     v|vo|voi|void)
                         echo "\
-int main(void)"\
+int main (void)"\
                         >> $fullpath
                     ;;
 
                     a|ar|arg|args)
                         echo "\
-int main(int argc, char *argv[])"\
+int main (int argc, char *argv[])"\
                         >> $fullpath
                     ;;
 
@@ -243,13 +243,13 @@ int main(int argc, char *argv[])"\
 
                     v|vo|voi|void)
                         echo "\
-int main()"\
+int main ()"\
                         >> $fullpath
                     ;;
 
                     a|ar|arg|args)
                         echo "\
-int main(int argc, char* argv[])"\
+int main (int argc, char* argv[])"\
                         >> $fullpath
                     ;;
 
