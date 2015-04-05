@@ -1044,7 +1044,7 @@ xtrace=false
 # option arguments
 
 shell="bash"
-main_args="args"
+main_args="void"
 
 # filenames
 
