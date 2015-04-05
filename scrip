@@ -272,7 +272,7 @@ int main (int argc, char* argv[])"\
 
         echo "\
 {
-    return 0;
+  return 0;
 }"\
         >> $fullpath
 
@@ -408,22 +408,22 @@ create_html () {
     echo "\
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset=\"utf-8\" />
-        <title>$title</title>
+  <head>
+    <meta charset=\"utf-8\" />
+    <title>$title</title>
 "\
     > $fullpath
 
     if $link_stylecss ; then
-        echo "        <link rel=\"stylesheet\" href=\"style.css\" />"\
+        echo "    <link rel=\"stylesheet\" href=\"style.css\" />"\
          >> $fullpath
     fi
 
     echo "\
-    </head>
+  </head>
 
-    <body>
-    </body>
+  <body>
+  </body>
 </html>
 "\
     >> $fullpath
@@ -1000,7 +1000,7 @@ esac
 
 # options
 
-cflags='Himm:stu'
+cflags='Him:stu'
 genflags='efhq'
 hsflags='imM'
 htmlflags='tl'
@@ -1043,8 +1043,8 @@ xtrace=false
 
 # option arguments
 
-shell='bash'
-main_args='void'
+shell="bash"
+main_args="args"
 
 # filenames
 
@@ -1370,7 +1370,7 @@ while (($OPTIND <= $#)) ; do
                         main=true
                         main_args=$OPTARG
 
-                        if [[ $main_args == "" ]] ; then
+                        if [[ $main_args == '' ]] ; then
                             main_args="void"
                         fi
                     ;;
