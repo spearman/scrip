@@ -337,6 +337,8 @@ create_haskell_source () {
 
 module $name_upper where"\
         >> $fullpath
+    else
+        name_upper="Main"
     fi
 
     if $include_io ; then
@@ -354,7 +356,9 @@ import System.IO"\
 ----------------------------------------------------------------------
 
 main :: IO ()
-main = do"\
+main = do
+  putStrLn \"$name_upper main...\"
+  return ()"\
         >> $fullpath
     fi
 
