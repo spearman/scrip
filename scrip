@@ -12,7 +12,7 @@ Usage:
     scrip -h, --help
 
 Filetypes
-    c, c++, hs, html/css, md, sh, tex, texi
+    c, c++, hs, html/css, idr, md, sh, tex, texi
 
 General flags
     -f          force overwrite of existing files
@@ -34,11 +34,15 @@ c, c++
 hs
     -i          import System.IO
     -m          create a main function within file
-    -M          module line
+    -M          declare module
 
 html
     -t          formatted title from filename
     -l          link element for local style.css
+
+idr
+    -m          create a main function within file
+    -M          declare module
 
 md
     -n          no file extension
@@ -320,7 +324,7 @@ create_haskell_source () {
 
     echo "\
 {---------------------------------------------------------------------
-  $name
+    $filename
 ---------------------------------------------------------------------}"\
     > $fullpath
 
@@ -436,6 +440,87 @@ create_html () {
     then
         echo "error: file not created"
         return 1
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
+##  create_idris_source ()
+#
+
+create_idris_source () {
+
+    # Create a new .idr file with optional main function
+
+    if [[ $# != 7 ]] ; then
+        echo "error: create_idris_source() requires 7 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    main=$6
+    module=$7
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+{---------------------------------------------------------------------
+    $filename
+---------------------------------------------------------------------}"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if [[ $name == "main" || $name == "Main" ]] ; then
+        module_name="Main"
+    else
+        module_name=$name
+    fi
+
+    if $module ; then
+
+        echo "\
+
+module $module_name"\
+        >> $fullpath
+    else
+        module_name="Main"
+    fi
+
+    if $main ; then
+        echo "\
+
+----------------------------------------------------------------------
+--  main
+----------------------------------------------------------------------
+
+main : IO ()
+main = do
+  putStrLn \"$module_name main...\"
+  return ()"\
+        >> $fullpath
     fi
 
     if ! $quiet ; then
@@ -1008,6 +1093,7 @@ cflags='Him:stu'
 genflags='efhq'
 hsflags='imM'
 htmlflags='tl'
+idrflags='mM'
 mdflags='csnlR'
 shflags='xb:sn'
 texflags='cdt'
@@ -1020,6 +1106,7 @@ specflags=
 haskell=false
 header=false
 html=false
+idris=false
 latex=false
 markdown=false
 script=false
@@ -1030,6 +1117,7 @@ texinfo=false
 
 hs_main=false
 html_title=false
+idr_main=false
 include_io=false
 latex_date=false
 latex_title=false
@@ -1069,6 +1157,7 @@ fi
 haskell_ext=
 header_ext=
 html_ext=
+idris_ext=
 latex_ext=
 markdown_ext=
 script_ext=
@@ -1078,6 +1167,7 @@ texinfo_ext=
 haskell_filename=
 header_filename=
 html_filename=
+idris_filename=
 latex_filename=
 markdown_filename=
 script_filename=
@@ -1090,7 +1180,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|hs|htm|html|md|sh|tex|texi)
+    c|c++|cc|cpp|hs|htm|html|idr|md|sh|tex|texi)
         known_filetype=true
     ;;
 
@@ -1178,6 +1268,13 @@ case $extension in
         fi
     ;;
 
+    # idr
+
+    idr)
+        if ! $known_filetype ; then
+            filetype='idr'
+        fi
+    ;;
 
     # md
 
@@ -1272,6 +1369,12 @@ case $filetype in
         fi
     ;;
 
+    idr)
+        specflags=$idrflags
+        idris=true
+        idris_ext='idr'
+    ;;
+
     md)
         specflags=$mdflags
         markdown=true
@@ -1308,6 +1411,7 @@ esac
 haskell_filename=$name'.'$haskell_ext
 header_filename=$name'.'$header_ext
 html_filename=$name'.'$html_ext
+idris_filename=$name'.'$idris_ext
 latex_filename=$name'.'$latex_ext
 markdown_filename=$name'.'$markdown_ext
 script_filename=$name'.'$script_ext
@@ -1316,6 +1420,7 @@ src_filename=$name'.'$src_ext
 haskell_fullpath=$directory'/'$haskell_filename
 header_fullpath=$directory'/'$header_filename
 html_fullpath=$directory'/'$html_filename
+idris_fullpath=$directory'/'$idris_filename
 latex_fullpath=$directory'/'$latex_filename
 markdown_fullpath=$directory'/'$markdown_filename
 script_fullpath=$directory'/'$script_filename
@@ -1381,6 +1486,10 @@ while (($OPTIND <= $#)) ; do
 
                     hs)
                         hs_main=true
+                    ;;
+
+                    idr)
+                        idr_main=true
                     ;;
 
                     *)
@@ -1455,24 +1564,25 @@ done
 
 # catch main
 
-if [[ $name == 'main' ]] ; then
+if [[ $name == "main" || $name == "Main" ]] ; then
     hs_main=true
+    idr_main=true
     main=true
     include_io=true
 fi
 
 # if no flag or extension was provided, set defaults
 
-if ! $header && ! $src && ! $script && ! $haskell ; then
+if ! $header && ! $src && ! $script && ! $haskell && ! $idris; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
 
-            if [[ $name != 'main' ]] ; then
+            if [[ $name != "main" ]] ; then
                 header=true
             fi
 
-            if [[ $name == 'main' ]] ; then
+            if [[ $name == "main" ]] ; then
                 include_io=true
             fi
 
@@ -1481,6 +1591,10 @@ if ! $header && ! $src && ! $script && ! $haskell ; then
 
         hs)         # default haskell: create file with main
             hs_main=true
+        ;;
+
+        idr)        # default idris: create file with main
+            idr_main=true
         ;;
 
         md)         # default markdown: create markdown
@@ -1496,11 +1610,11 @@ fi
 
 # messages for invalid options
 
-if ! $src && ! $haskell && $include_io ; then
+if ! $src && ! $haskell && ! $idris && $include_io ; then
     echo "warning: include io specified but no source file created"
 fi
 
-if ! $src && ! $haskell && $main ; then
+if ! $src && ! $haskell && ! $idris && $main ; then
     echo "warning: main specified but no source file created"
 fi
 
@@ -1526,7 +1640,7 @@ if $src ; then
 
     no_header=false
 
-    if [[ $name == 'main' ]] ; then
+    if [[ $name == "main" ]] ; then
         no_header=$no_header_flag
     fi
 
@@ -1545,6 +1659,12 @@ if $html ; then
     create_html $directory $html_ext $name $overwrite $quiet $html_title $link_stylecss
 
     html_created=$directory'/'$name'.'$html_ext
+fi
+
+if $idris ; then
+    create_idris_source $directory $idris_ext $name $overwrite $quiet $idr_main $module
+
+    idris_created=$directory'/'$name'.'$idris_ext
 fi
 
 if $markdown ; then
@@ -1588,7 +1708,7 @@ if $texinfo ; then
 fi
 
 if $open_editor; then
-    vim $header_created $src_created $script_created $markdown_created $haskell_created $latex_created
+    vim $header_created $src_created $script_created $markdown_created $haskell_created $idris_created $latex_created
 fi
 
 # exit
