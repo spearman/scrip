@@ -32,7 +32,7 @@ c, c++
     -u          create pair of files for a compilation unit
 
 hs
-    -i          import System.IO
+    -i          import System.Environment
     -m          create a main function within file
     -M          declare module
 
@@ -348,7 +348,7 @@ module $name_upper where"\
     if $include_io ; then
         echo "\
 
-import System.IO"\
+import System.Environment"\
         >> $fullpath
     fi
 
@@ -361,8 +361,7 @@ import System.IO"\
 
 main :: IO ()
 main = do
-  putStrLn \"$name_upper main...\"
-  return ()"\
+  putStrLn \"$name_upper main...\""\
         >> $fullpath
     fi
 
@@ -518,8 +517,7 @@ module $module_name"\
 
 main : IO ()
 main = do
-  putStrLn \"$module_name main...\"
-  return ()"\
+  putStrLn \"$module_name main...\""\
         >> $fullpath
     fi
 
