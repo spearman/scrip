@@ -49,6 +49,9 @@ md
     -l          link element for local style.css
     -R          template software requirement specification document
 
+rs
+    -m          create a main function within file
+
 sh
     -x          create file with xtrace set
     -b [shell]  specify a different shell in /bin/ (default bash)
@@ -802,6 +805,75 @@ create_markdown () {
 
 
 ######################################################################
+##  create_rust_source ()
+#
+
+create_rust_source () {
+
+    # Create a new .rs file with optional main function
+
+    if [[ $# != 6 ]] ; then
+        echo "error: create_rust_source() requires 6 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+    main=$6
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+/********************************************************************/
+//! \`$filename\`
+
+/********************************************************************/"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if $main ; then
+      if [[ $name == "main" ]] ; then
+        echo "\
+
+fn main () {
+  println! (\"main...\");
+}"\
+        >> $fullpath
+      else
+        echo "\
+
+fn main () {
+  println! (\"$name main...\");
+}"\
+        >> $fullpath
+      fi
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+
+
+######################################################################
 ##  create_sh_script ()
 #
 
@@ -1093,6 +1165,7 @@ hsflags='imM'
 htmlflags='tl'
 idrflags='mM'
 mdflags='csnlR'
+rsflags='m'
 shflags='xb:sn'
 texflags='cdt'
 texiflags=
@@ -1107,6 +1180,7 @@ html=false
 idris=false
 latex=false
 markdown=false
+rust=false
 script=false
 src=false
 texinfo=false
@@ -1116,6 +1190,7 @@ texinfo=false
 hs_main=false
 html_title=false
 idr_main=false
+rs_main=false
 include_io=false
 latex_date=false
 latex_title=false
@@ -1158,6 +1233,7 @@ html_ext=
 idris_ext=
 latex_ext=
 markdown_ext=
+rust_ext=
 script_ext=
 src_ext=
 texinfo_ext=
@@ -1168,6 +1244,7 @@ html_filename=
 idris_filename=
 latex_filename=
 markdown_filename=
+rust_filename=
 script_filename=
 src_filename=
 texinfo_filename=
@@ -1178,7 +1255,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|hs|htm|html|idr|md|sh|tex|texi)
+    c|c++|cc|cpp|hs|htm|html|idr|md|rs|sh|tex|texi)
         known_filetype=true
     ;;
 
@@ -1283,6 +1360,14 @@ case $extension in
         fi
     ;;
 
+    # rs
+
+    rs)
+        if ! $known_filetype ; then
+            filetype='rs'
+        fi
+    ;;
+
     # sh
 
     sh)
@@ -1379,6 +1464,12 @@ case $filetype in
         markdown_ext='md'
     ;;
 
+    rs)
+        specflags=$rsflags
+        rust=true
+        rust_ext='rs'
+    ;;
+
     sh)
         specflags=$shflags
         script=true
@@ -1412,6 +1503,7 @@ html_filename=$name'.'$html_ext
 idris_filename=$name'.'$idris_ext
 latex_filename=$name'.'$latex_ext
 markdown_filename=$name'.'$markdown_ext
+rust_filename=$name'.'$rust_ext
 script_filename=$name'.'$script_ext
 src_filename=$name'.'$src_ext
 
@@ -1421,6 +1513,7 @@ html_fullpath=$directory'/'$html_filename
 idris_fullpath=$directory'/'$idris_filename
 latex_fullpath=$directory'/'$latex_filename
 markdown_fullpath=$directory'/'$markdown_filename
+rust_fullpath=$directory'/'$rust_filename
 script_fullpath=$directory'/'$script_filename
 src_fullpath=$directory'/'$src_filename
 
@@ -1488,6 +1581,10 @@ while (($OPTIND <= $#)) ; do
 
                     idr)
                         idr_main=true
+                    ;;
+
+                    rs)
+                        rs_main=true
                     ;;
 
                     *)
@@ -1565,13 +1662,15 @@ done
 if [[ $name == "main" || $name == "Main" ]] ; then
     hs_main=true
     idr_main=true
+    rs_main=true
     main=true
     include_io=true
 fi
 
 # if no flag or extension was provided, set defaults
 
-if ! $header && ! $src && ! $script && ! $haskell && ! $idris; then
+if ! $header && ! $src && ! $script && ! $haskell && ! $idris\
+  && ! $rust; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
@@ -1595,8 +1694,8 @@ if ! $header && ! $src && ! $script && ! $haskell && ! $idris; then
             idr_main=true
         ;;
 
-        md)         # default markdown: create markdown
-            markdown=true
+        rs)         # default rust: create file with main
+            rs_main=true
         ;;
 
         sh)         # default shell: create script
@@ -1608,11 +1707,11 @@ fi
 
 # messages for invalid options
 
-if ! $src && ! $haskell && ! $idris && $include_io ; then
+if ! $src && ! $haskell && ! $idris && ! $rust && $include_io ; then
     echo "warning: include io specified but no source file created"
 fi
 
-if ! $src && ! $haskell && ! $idris && $main ; then
+if ! $src && ! $haskell && ! $idris && ! $rust && $main ; then
     echo "warning: main specified but no source file created"
 fi
 
@@ -1677,6 +1776,13 @@ if $markdown ; then
 
 fi
 
+if $rust ; then
+
+    create_rust_source $directory $rust_ext $name $overwrite $quiet $rs_main
+
+    rust_created=$directory'/'$name'.'$rust_ext
+fi
+
 if $script ; then
 
     create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace $no_ext
@@ -1706,7 +1812,7 @@ if $texinfo ; then
 fi
 
 if $open_editor; then
-    vim $header_created $src_created $script_created $markdown_created $haskell_created $idris_created $latex_created
+    vim $header_created $src_created $script_created $markdown_created $haskell_created $idris_created $latex_created $rust_created
 fi
 
 # exit
