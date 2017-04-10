@@ -53,7 +53,8 @@ rs
     -m          create a main function within file
 
 sh
-    -x          create file with xtrace set
+    -x          create file with xtrace set (set -x)
+    -z          create file with automatic non-zero exits set (set -e)
     -b [shell]  specify a different shell in /bin/ (default bash)
     -n          no file extension
 
@@ -881,8 +882,8 @@ create_sh_script () {
 
     # Create a new .sh file with bash shebang and execute permission.
 
-    if [[ $# != 8 ]] ; then
-        echo "error: create_sh_script() requires 8 arguments"
+    if [[ $# != 9 ]] ; then
+        echo "error: create_sh_script() requires 9 arguments"
         return 1
     fi
 
@@ -893,7 +894,8 @@ create_sh_script () {
     overwrite=$5
     quiet=$6
     xtrace=$7
-    no_ext=$8
+    nonzero_exit=$8
+    no_ext=$9
 
     if $no_ext ; then
         filename=$4
@@ -921,6 +923,12 @@ create_sh_script () {
     if $xtrace ; then
         echo "\
 set -x"\
+        >> $fullpath
+    fi
+
+    if $nonzero_exit ; then
+        echo "\
+set -e"\
         >> $fullpath
     fi
 
@@ -1166,7 +1174,7 @@ htmlflags='tl'
 idrflags='mM'
 mdflags='csnlR'
 rsflags='m'
-shflags='xb:sn'
+shflags='xzb:sn'
 texflags='cdt'
 texiflags=
 
@@ -1205,6 +1213,7 @@ requirements=false
 struct=false
 table_of_contents=false
 xtrace=false
+nonzero_exit=false
 
 # option arguments
 
@@ -1643,6 +1652,10 @@ while (($OPTIND <= $#)) ; do
                 xtrace=true
             ;;
 
+            z)
+                nonzero_exit=true
+            ;;
+
             h)
                 echo "\
 ignoring -h: use -H for headers
@@ -1785,7 +1798,7 @@ fi
 
 if $script ; then
 
-    create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace $no_ext
+    create_sh_script $directory $script_ext $shell $name $overwrite $quiet $xtrace $nonzero_exit $no_ext
 
     if $no_ext ; then
         script_created=$directory'/'$name
