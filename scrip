@@ -94,18 +94,13 @@ create_c_header () {
     name_upper=$(echo $name | tr [:lower:] [:upper:])
     ext_upper=$(echo $extension | tr [:lower:] [:upper:])
 
-    guard=$name_upper$'_'$ext_upper
-
     if [[ -e $fullpath ]] && ! $overwrite ; then
         echo "error: $fullpath already exists, use -f to overwrite"
         return 1
     fi
 
     echo "\
-#ifndef $guard
-#define $guard
-
-#endif"\
+#pragma once"\
     > $fullpath
 
     if [[ !(-e $fullpath) ]] ; then
@@ -126,9 +121,7 @@ struct $name;
 struct $name
 {
 
-};
-
-#endif"\
+};"\
         >> $fullpath
 
     fi
