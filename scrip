@@ -23,7 +23,7 @@ Filetype-specific flags
 
 c, c++
     -H          create a header file
-    -i          include std io files in header
+    -i          include standard library i/o headers
     -m [args]   create a source file with main function and
                     no header inclusion if filename==main
                     args is either 'void' or 'args'
@@ -169,22 +169,12 @@ create_c_src () {
 
     echo -n > $fullpath
 
-    if ! $no_header ; then
-        echo "\
-#include \"$name.$header_ext\""\
-        > $fullpath
-    fi
-
     if [[ !(-e $fullpath) ]] ; then
         echo "error: file not created"
         return 1
     fi
 
     if $include_io ; then
-
-        if ! $no_header ; then
-            echo "" >> $fullpath
-        fi
 
         case $extension in
 
@@ -208,6 +198,12 @@ create_c_src () {
         esac
     fi
 
+    if ! $no_header ; then
+        echo "\
+#include \"$name.$header_ext\""\
+        >> $fullpath
+    fi
+
     if $main ; then
 
         if ! $no_header || $include_io ; then
@@ -221,13 +217,13 @@ create_c_src () {
 
                     v|vo|voi|void)
                         echo "\
-int main (void)"\
+int main (void) {"\
                         >> $fullpath
                     ;;
 
                     a|ar|arg|args)
                         echo "\
-int main (int argc, char *argv[])"\
+int main (int argc, char *argv[]) {"\
                         >> $fullpath
                     ;;
 
@@ -244,13 +240,13 @@ int main (int argc, char *argv[])"\
 
                     v|vo|voi|void)
                         echo "\
-int main ()"\
+int main () {"\
                         >> $fullpath
                     ;;
 
                     a|ar|arg|args)
                         echo "\
-int main (int argc, char* argv[])"\
+int main (int argc, char* argv[]) {"\
                         >> $fullpath
                     ;;
 
@@ -272,7 +268,6 @@ int main (int argc, char* argv[])"\
         # body
 
         echo "\
-{
   return 0;
 }"\
         >> $fullpath
@@ -1741,13 +1736,13 @@ fi
 
 if $src ; then
 
-    no_header=false
+    #no_header=true
 
-    if [[ $name == "main" ]] ; then
-        no_header=$no_header_flag
-    fi
+    #if [[ $name == "main" ]] ; then
+    #    no_header=$no_header_flag
+    #fi
 
-    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header $main $main_args $include_io
+    create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header_flag $main $main_args $include_io
 
     src_created=$directory'/'$name'.'$src_ext
 fi
