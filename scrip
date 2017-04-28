@@ -268,7 +268,6 @@ int main (int argc, char* argv[]) {"\
         # body
 
         echo "\
-  return 0;
 }"\
         >> $fullpath
 
