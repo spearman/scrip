@@ -210,62 +210,53 @@ create_c_src () {
             echo "" >> $fullpath
         fi
 
-        case $extension in
+        case $main_args in
 
-            c)
-                case $main_args in
-
-                    v|vo|voi|void)
-                        echo "\
-int main (void) {"\
-                        >> $fullpath
-                    ;;
-
-                    a|ar|arg|args)
-                        echo "\
-int main (int argc, char *argv[]) {"\
-                        >> $fullpath
-                    ;;
-
-                    *)
-                        echo "error: create_c_src() \$main_args not valid"
-                        return 1
-                    ;;
-
-                esac
+            v|vo|voi|void)
+                echo "\
+int main () {"\
+                >> $fullpath
             ;;
 
-            cc|cpp)
-                case $main_args in
-
-                    v|vo|voi|void)
-                        echo "\
-int main () {"\
-                        >> $fullpath
-                    ;;
-
-                    a|ar|arg|args)
-                        echo "\
-int main (int argc, char* argv[]) {"\
-                        >> $fullpath
-                    ;;
-
-                    *)
-                        echo "error: create_c_src() \$main_args not valid"
-                        return 1
-                    ;;
-
-                esac
+            a|ar|arg|args)
+                echo "\
+int main (int argc, char *argv[]) {"\
+                >> $fullpath
             ;;
 
             *)
-                echo "error: create_c_src() extension not recognized"
+                echo "error: create_c_src() \$main_args not valid"
                 return 1
             ;;
 
         esac
 
         # body
+
+        if $include_io ; then
+            case $extension in
+
+                c)
+                    echo "\
+  puts (\"main...\");
+  puts (\"...main\");"\
+                    >> $fullpath
+                ;;
+
+                cc|cpp)
+                    echo "\
+  std::cout << \"main...\\n\";
+  std::cout << \"...main\\n\";"\
+                    >> $fullpath
+                ;;
+
+                *)
+                    echo "error: create_c_src() extension not recognized"
+                    return 1
+                ;;
+
+            esac
+        fi
 
         echo "\
 }"\
