@@ -54,7 +54,7 @@ rs
 
 sh
     -x          create file with xtrace set (set -x)
-    -z          create file with automatic non-zero exits set (set -e)
+    -X          create file with automatic non-zero exits set (set -e)
     -b [shell]  specify a different shell in /bin/ (default bash)
     -n          no file extension
 
@@ -1152,7 +1152,7 @@ htmlflags='tl'
 idrflags='mM'
 mdflags='csnlR'
 rsflags='m'
-shflags='xzb:sn'
+shflags='xXb:sn'
 texflags='cdt'
 texiflags=
 
@@ -1630,7 +1630,7 @@ while (($OPTIND <= $#)) ; do
                 xtrace=true
             ;;
 
-            z)
+            X)
                 nonzero_exit=true
             ;;
 
