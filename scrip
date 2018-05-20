@@ -12,7 +12,7 @@ Usage:
     scrip -h, --help
 
 Filetypes
-    c, c++, hs, html/css, idr, md, sh, tex, texi
+    c, c++, gv, hs, html/css, idr, md, py, rs, sh, tex, texi
 
 General flags
     -f          force overwrite of existing files
@@ -272,6 +272,59 @@ int main (int argc, char *argv[]) {"\
 }
 
 
+
+###############################################################################
+##  create_graphviz ()
+#
+
+create_graphviz () {
+
+    # Create a new html file with optional title
+
+    if [[ $# != 5 ]] ; then
+        echo "error: create_graphviz() requires 5 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+digraph G {
+  "A";
+  "B";
+  "C";
+  "A" -> "B";
+  "B" -> "C";
+  "A" -> "C";
+}
+"\
+    > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
 
 ###############################################################################
 ##  create_haskell_source ()
@@ -772,6 +825,52 @@ create_markdown () {
 
 
 ###############################################################################
+##  create_py_script ()
+#
+
+create_py_script () {
+    if [[ $# != 5 ]] ; then
+        echo "error: create_py_script() requires 5 arguments"
+        return 1
+    fi
+
+    directory=$1
+    extension=$2
+    name=$3
+    overwrite=$4
+    quiet=$5
+
+    filename=$3$'.'$2
+
+    fullpath=$directory'/'$filename
+
+    if [[ -e $fullpath ]] && ! $overwrite ; then
+        echo "error: $fullpath already exists, use -f to overwrite"
+        return 1
+    fi
+
+    echo "\
+#!/usr/bin/env python3
+
+print (\"hello world\")"\
+ > $fullpath
+
+    if [[ !(-e $fullpath) ]]
+    then
+        echo "error: file not created"
+        return 1
+    fi
+
+    chmod +x $fullpath
+
+    if ! $quiet ; then
+        echo "created file $fullpath"
+    fi
+
+    return
+}
+
+###############################################################################
 ##  create_rust_source ()
 #
 
@@ -1135,10 +1234,12 @@ esac
 
 cflags='Him:stu'
 genflags='efhq'
+gvflags=
 hsflags='imM'
 htmlflags='tl'
 idrflags='mM'
 mdflags='csnlR'
+pyflags=
 rsflags='m'
 shflags='xXb:sn'
 texflags='cdt'
@@ -1148,12 +1249,14 @@ specflags=
 
 # file output flags
 
+graphviz=false
 haskell=false
 header=false
 html=false
 idris=false
 latex=false
 markdown=false
+python=false
 rust=false
 script=false
 src=false
@@ -1202,23 +1305,27 @@ if [[ $extension == $filename ]] ; then
     extension=
 fi
 
+gv_ext=
 haskell_ext=
 header_ext=
 html_ext=
 idris_ext=
 latex_ext=
 markdown_ext=
+python_ext=
 rust_ext=
 script_ext=
 src_ext=
 texinfo_ext=
 
+gv_filename=
 haskell_filename=
 header_filename=
 html_filename=
 idris_filename=
 latex_filename=
 markdown_filename=
+python_filename=
 rust_filename=
 script_filename=
 src_filename=
@@ -1230,7 +1337,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|hs|htm|html|idr|md|rs|sh|tex|texi)
+    c|c++|cc|cpp|gv|hs|htm|html|idr|md|py|rs|sh|tex|texi)
         known_filetype=true
     ;;
 
@@ -1303,6 +1410,14 @@ case $extension in
         fi
     ;;
 
+    # gv
+
+    dot)
+        if ! $known_filetype ; then
+            filetype='gv'
+        fi
+    ;;
+
     # hs
 
     hs)
@@ -1332,6 +1447,14 @@ case $extension in
         markdown=true
         if ! $known_filetype ; then
             filetype='md'
+        fi
+    ;;
+
+    # py
+
+    py)
+        if ! $known_filetype ; then
+            filetype='py'
         fi
     ;;
 
@@ -1410,6 +1533,12 @@ case $filetype in
         specflags=$cflags
     ;;
 
+    gv)
+        specflags=$gvflags
+        graphviz=true
+        graphviz_ext='dot'
+    ;;
+
     hs)
         specflags=$hsflags
         haskell=true
@@ -1437,6 +1566,12 @@ case $filetype in
         specflags=$mdflags
         markdown=true
         markdown_ext='md'
+    ;;
+
+    py)
+        specflags=$pyflags
+        python=true
+        python_ext='py'
     ;;
 
     rs)
@@ -1472,22 +1607,26 @@ esac
 
 # filenames
 
+graphviz_filename=$name'.'$graphviz_ext
 haskell_filename=$name'.'$haskell_ext
 header_filename=$name'.'$header_ext
 html_filename=$name'.'$html_ext
 idris_filename=$name'.'$idris_ext
 latex_filename=$name'.'$latex_ext
 markdown_filename=$name'.'$markdown_ext
+python_filename=$name'.'$python_ext
 rust_filename=$name'.'$rust_ext
 script_filename=$name'.'$script_ext
 src_filename=$name'.'$src_ext
 
+graphviz_fullpath=$directory'/'$graphviz_filename
 haskell_fullpath=$directory'/'$haskell_filename
 header_fullpath=$directory'/'$header_filename
 html_fullpath=$directory'/'$html_filename
 idris_fullpath=$directory'/'$idris_filename
 latex_fullpath=$directory'/'$latex_filename
 markdown_fullpath=$directory'/'$markdown_filename
+python_fullpath=$directory'/'$python_filename
 rust_fullpath=$directory'/'$rust_filename
 script_fullpath=$directory'/'$script_filename
 src_fullpath=$directory'/'$src_filename
@@ -1648,8 +1787,8 @@ fi
 
 # if no flag or extension was provided, set defaults
 
-if ! $header && ! $src && ! $script && ! $haskell && ! $idris\
-  && ! $rust; then
+if ! $header && ! $src && ! $script && ! $graphviz && ! $haskell && ! $idris\
+  && ! $python && ! $rust; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
@@ -1665,6 +1804,10 @@ if ! $header && ! $src && ! $script && ! $haskell && ! $idris\
             src=true
         ;;
 
+        gv)         # default graphviz
+            graphviz=true
+        ;;
+
         hs)         # default haskell: create file with main
             hs_main=true
         ;;
@@ -1673,11 +1816,15 @@ if ! $header && ! $src && ! $script && ! $haskell && ! $idris\
             idr_main=true
         ;;
 
+        py)         # default python: create python script
+            python=true
+        ;;
+
         rs)         # default rust: create file with main
             rs_main=true
         ;;
 
-        sh)         # default shell: create script
+        sh)         # default shell: create shell script
             script=true
         ;;
 
@@ -1725,6 +1872,12 @@ if $src ; then
     src_created=$directory'/'$name'.'$src_ext
 fi
 
+if $graphviz ; then
+    create_graphviz $directory $graphviz_ext $name $overwrite $quiet
+
+    graphviz_created=$directory'/'$name'.'$graphviz_ext
+fi
+
 if $haskell ; then
     create_haskell_source $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io $module
 
@@ -1753,6 +1906,13 @@ if $markdown ; then
         markdown_created=$directory'/'$name'.'$markdown_ext
     fi
 
+fi
+
+if $python ; then
+
+    create_py_script $directory $python_ext $name $overwrite $quiet
+
+    python_created=$directory'/'$name'.'$python_ext
 fi
 
 if $rust ; then
@@ -1791,7 +1951,9 @@ if $texinfo ; then
 fi
 
 if $open_editor; then
-    vim $header_created $src_created $script_created $markdown_created $haskell_created $idris_created $latex_created $rust_created
+    vim $header_created $src_created $script_created $markdown_created \
+      $graphviz_created $haskell_created $idris_created $latex_created \
+      $python_created $rust_created
 fi
 
 # exit

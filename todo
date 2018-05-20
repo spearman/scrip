@@ -1,8 +1,6 @@
 - racket files
 - erlang files
 - clojure files
-- py files
-- graphviz dot files
 - makefiles
 - c doxygen comments
 - settings file for default editor (currently opens with vim)
