@@ -214,7 +214,7 @@ create_c_src () {
 
             v|vo|voi|void)
                 echo "\
-int main () {"\
+int main() {"\
                 >> $fullpath
             ;;
 
@@ -916,14 +916,14 @@ create_rust_source () {
       if [[ $name == "main" ]] ; then
         echo "\
 
-fn main () {
+fn main() {
   println! (\"main...\");
 }"\
         >> $fullpath
       else
         echo "\
 
-fn main () {
+fn main() {
   println! (\"$name main...\");
 }"\
         >> $fullpath
