@@ -186,7 +186,7 @@ create_c_src () {
 
             cc|cpp)
                 echo "\
-#include <iostream>"\
+#include <cstdio>"\
                 >> $fullpath
             ;;
 
@@ -236,19 +236,19 @@ int main (int argc, char *argv[]) {"\
         if $include_io ; then
             case $extension in
 
-                c)
+                c|cc|cpp)
                     echo "\
   puts (\"main...\");
   puts (\"...main\");"\
                     >> $fullpath
                 ;;
 
-                cc|cpp)
-                    echo "\
-  std::cout << \"main...\\n\";
-  std::cout << \"...main\\n\";"\
-                    >> $fullpath
-                ;;
+#               cc|cpp)
+#                   echo "\
+# std::cout << \"main...\\n\";
+# std::cout << \"...main\\n\";"\
+#                   >> $fullpath
+#               ;;
 
                 *)
                     echo "error: create_c_src() extension not recognized"
