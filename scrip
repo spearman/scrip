@@ -367,8 +367,10 @@ create_haskell_source () {
     if $shebang ; then
       echo "\
 #!/usr/bin/env runhaskell
+
 $header"\
       > $fullpath
+      chmod +x $fullpath
     else
       echo "$header" > $fullpath
     fi
