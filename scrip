@@ -409,7 +409,8 @@ import System.Environment"\
 
 main :: IO ()
 main = do
-  putStrLn \"$name_upper main...\""\
+  putStrLn \"main...\"
+  putStrLn \"...main\""\
         >> $fullpath
     fi
 
