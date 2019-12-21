@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ################################################################################
 ##  help
 ################################################################################
+
+SCRIP_VERSION="0.1.0"
 
 HELP="\
 scrip - file creation utility
@@ -10,6 +12,7 @@ scrip - file creation utility
 Usage:
     scrip <filename> [<filetype>] [flags]
     scrip -h, --help
+    scrip --version
 
 Filetypes
     c, c++, gv, hs, html/css, idr, md, py, rs, sh, tex, texi
@@ -56,7 +59,7 @@ rs
 sh
     -x          create file with xtrace set (set -x)
     -X          create file with automatic non-zero exits set (set -e)
-    -b [shell]  specify a different shell in /bin/ (default bash)
+    -b [shell]  specify a different shell (default sh)
     -n          no file extension
 
 tex
@@ -66,8 +69,6 @@ tex
 
 texi
 "
-
-
 
 ################################################################################
 ##  create_c_header ()
@@ -327,6 +328,8 @@ digraph G {
     return
 }
 
+
+
 ################################################################################
 ##  create_haskell_source ()
 ################################################################################
@@ -335,7 +338,7 @@ create_haskell_source () {
 
     # Create a new .hs file with optional main function
 
-    nargs=9
+    nargs=8
     if [[ $# != $nargs ]] ; then
         echo "error: create_haskell_source() requires $nargs arguments"
         return 1
@@ -347,9 +350,8 @@ create_haskell_source () {
     overwrite=$4
     quiet=$5
     main=$6
-    include_io=$7
-    module=$8
-    shebang=$9
+    module=$7
+    shebang=$8
 
     filename=$3$'.'$2
 
@@ -391,13 +393,6 @@ module $name_upper where"\
         >> $fullpath
     else
         name_upper="Main"
-    fi
-
-    if $include_io ; then
-        echo "\
-
-import System.Environment"\
-        >> $fullpath
     fi
 
     if $main ; then
@@ -884,6 +879,8 @@ print (\"hello world\")"\
     return
 }
 
+
+
 ################################################################################
 ##  create_rust_source ()
 ################################################################################
@@ -958,7 +955,7 @@ fn main() {
 
 create_sh_script () {
 
-    # Create a new .sh file with bash shebang and execute permission.
+    # Create a new .sh file with shebang and execute permission.
 
     if [[ $# != 9 ]] ; then
         echo "error: create_sh_script() requires 9 arguments"
@@ -988,9 +985,15 @@ create_sh_script () {
         return 1
     fi
 
-    echo "\
-#!/bin/$shell"\
-    > $fullpath
+    if [[ $shell == "sh" ]] ; then
+      echo "\
+#!/bin/sh"\
+      > $fullpath
+    else
+      echo "\
+#!/usr/bin/env $shell"\
+      > $fullpath
+    fi
 
     if [[ !(-e $fullpath) ]]
     then
@@ -1012,7 +1015,7 @@ set -e"\
 
     echo "\
 
-exit"\
+exit 0"\
     >> $fullpath
 
     chmod +x $fullpath
@@ -1235,7 +1238,12 @@ case $1 in
 
     -h|--help)
         echo "$HELP"
-        exit
+        exit 0
+    ;;
+
+    --version)
+        echo "scrip $SCRIP_VERSION"
+        exit 0
     ;;
 
     *)
@@ -1300,7 +1308,7 @@ shebang=false
 
 # option arguments
 
-shell="bash"
+shell="sh"
 main_args="void"
 
 # filenames
@@ -1878,13 +1886,6 @@ if $header ; then
 fi
 
 if $src ; then
-
-    #no_header=true
-
-    #if [[ $name == "main" ]] ; then
-    #    no_header=$no_header_flag
-    #fi
-
     create_c_src $directory $src_ext $header_ext $name $overwrite $quiet $no_header_flag $main $main_args $include_io
 
     src_created=$directory'/'$name'.'$src_ext
@@ -1897,7 +1898,7 @@ if $graphviz ; then
 fi
 
 if $haskell ; then
-    create_haskell_source $directory $haskell_ext $name $overwrite $quiet $hs_main $include_io $module $shebang
+    create_haskell_source $directory $haskell_ext $name $overwrite $quiet $hs_main $module $shebang
 
     haskell_created=$directory'/'$name'.'$haskell_ext
 fi
@@ -1976,4 +1977,4 @@ fi
 
 # exit
 
-exit
+exit 0
