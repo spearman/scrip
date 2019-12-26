@@ -4,7 +4,7 @@
 ##  help
 ################################################################################
 
-SCRIP_VERSION="0.1.0"
+SCRIP_VERSION="0.1.1"
 
 HELP="\
 scrip - file creation utility
@@ -15,7 +15,7 @@ Usage:
     scrip --version
 
 Filetypes
-    c, c++, gv, hs, html/css, idr, md, py, rs, sh, tex, texi
+    c, c++, gv, hs, html/css, idr, md, nix, py, rs, sh, tex, texi
 
 General flags
     -f          force overwrite of existing files
@@ -834,6 +834,72 @@ create_markdown () {
 
 
 ################################################################################
+##  create_nix_derivation ()
+################################################################################
+
+create_nix_derivation () {
+  if [[ $# != 5 ]] ; then
+      echo "error: create_nix_derivation() requires 5 arguments"
+      return 1
+  fi
+
+  directory=$1
+  extension=$2
+  name=$3
+  overwrite=$4
+  quiet=$5
+
+  filename=$3$'.'$2
+
+  fullpath=$directory'/'$filename
+
+  if [[ -e $fullpath ]] && ! $overwrite ; then
+      echo "error: $fullpath already exists, use -f to overwrite"
+      return 1
+  fi
+
+  echo "\
+with import <nixpkgs> {};"\
+> $fullpath
+
+  if [[ $name == "shell" ]] ; then
+    echo "\
+mkShell {
+  buildInputs = [ ];
+}"\
+>> $fullpath
+  else
+    pname=""
+    if [[ $name == "default" ]] ; then
+      pname=$(basename $(dirname $(pwd)))
+    else
+      pname=$name
+    fi
+    echo "\
+stdenv.mkDerivation {
+  name = \"$pname\";
+  src = lib.cleanSource ./.;
+  installPhase = ''
+    mkdir -p \$out
+  '';
+}"\
+>> $fullpath
+  fi
+
+  if [[ !(-e $fullpath) ]]
+  then
+      echo "error: file not created"
+      return 1
+  fi
+
+  if ! $quiet ; then
+      echo "created file $fullpath"
+  fi
+
+  return
+}
+
+################################################################################
 ##  create_py_script ()
 ################################################################################
 
@@ -1260,6 +1326,7 @@ hsflags='imMr'
 htmlflags='tl'
 idrflags='mM'
 mdflags='csnlR'
+nixflags=
 pyflags=
 rsflags='m'
 shflags='xXb:sn'
@@ -1277,6 +1344,7 @@ html=false
 idris=false
 latex=false
 markdown=false
+nix=false
 python=false
 rust=false
 script=false
@@ -1334,6 +1402,7 @@ html_ext=
 idris_ext=
 latex_ext=
 markdown_ext=
+nix_ext=
 python_ext=
 rust_ext=
 script_ext=
@@ -1347,6 +1416,7 @@ html_filename=
 idris_filename=
 latex_filename=
 markdown_filename=
+nix_filename=
 python_filename=
 rust_filename=
 script_filename=
@@ -1359,7 +1429,7 @@ known_filetype=false
 
 case $filetype in
 
-    c|c++|cc|cpp|gv|hs|htm|html|idr|md|py|rs|sh|tex|texi)
+    c|c++|cc|cpp|gv|hs|htm|html|idr|md|nix|py|rs|sh|tex|texi)
         known_filetype=true
     ;;
 
@@ -1469,6 +1539,14 @@ case $extension in
         markdown=true
         if ! $known_filetype ; then
             filetype='md'
+        fi
+    ;;
+
+    # nix
+
+    nix)
+        if ! $known_filetype ; then
+            filetype='nix'
         fi
     ;;
 
@@ -1590,6 +1668,12 @@ case $filetype in
         markdown_ext='md'
     ;;
 
+    nix)
+        specflags=$nixflags
+        nix=true
+        nix_ext='nix'
+    ;;
+
     py)
         specflags=$pyflags
         python=true
@@ -1636,6 +1720,7 @@ html_filename=$name'.'$html_ext
 idris_filename=$name'.'$idris_ext
 latex_filename=$name'.'$latex_ext
 markdown_filename=$name'.'$markdown_ext
+nix_filename=$name'.'$nix_ext
 python_filename=$name'.'$python_ext
 rust_filename=$name'.'$rust_ext
 script_filename=$name'.'$script_ext
@@ -1648,6 +1733,7 @@ html_fullpath=$directory'/'$html_filename
 idris_fullpath=$directory'/'$idris_filename
 latex_fullpath=$directory'/'$latex_filename
 markdown_fullpath=$directory'/'$markdown_filename
+nix_fullpath=$directory'/'$nix_filename
 python_fullpath=$directory'/'$python_filename
 rust_fullpath=$directory'/'$rust_filename
 script_fullpath=$directory'/'$script_filename
@@ -1814,7 +1900,7 @@ fi
 # if no flag or extension was provided, set defaults
 
 if ! $header && ! $src && ! $script && ! $graphviz && ! $haskell && ! $idris\
-  && ! $python && ! $rust; then
+  && ! $nix && ! $python && ! $rust; then
     case $filetype in
 
         c++|c|cc|cpp)   # default c family: create compilation unit
@@ -1840,6 +1926,10 @@ if ! $header && ! $src && ! $script && ! $graphviz && ! $haskell && ! $idris\
 
         idr)        # default idris: create file with main
             idr_main=true
+        ;;
+
+        nix)         # default nix: create nix derivation
+            nix=true
         ;;
 
         py)         # default python: create python script
@@ -1927,6 +2017,13 @@ if $markdown ; then
 
 fi
 
+if $nix ; then
+
+    create_nix_derivation $directory $nix_ext $name $overwrite $quiet
+
+    nix_created=$directory'/'$name'.'$nix_ext
+fi
+
 if $python ; then
 
     create_py_script $directory $python_ext $name $overwrite $quiet
@@ -1972,7 +2069,7 @@ fi
 if $open_editor; then
     vim $header_created $src_created $script_created $markdown_created \
       $graphviz_created $haskell_created $idris_created $latex_created \
-      $python_created $rust_created
+      $nix_created $python_created $rust_created
 fi
 
 # exit

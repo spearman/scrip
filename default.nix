@@ -1,6 +1,7 @@
 with import <nixpkgs> {};
 stdenv.mkDerivation {
   name = "scrip";
+  version = "0.1.1";
   src = lib.sourceByRegex ./. ["scrip.sh"];
   buildInputs = [
     coreutils
