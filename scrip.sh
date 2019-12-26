@@ -871,7 +871,7 @@ mkShell {
   else
     pname=""
     if [[ $name == "default" ]] ; then
-      pname=$(basename $(dirname $(pwd)))
+      pname=$(basename $(pwd))
     else
       pname=$name
     fi
