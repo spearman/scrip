@@ -1949,11 +1949,11 @@ fi
 
 # messages for invalid options
 
-if ! $src && ! $haskell && ! $idris && ! $rust && $include_io ; then
+if ! $src && ! $haskell && ! $idris && ! $rust && ! $latex && $include_io ; then
     echo "warning: include io specified but no source file created"
 fi
 
-if ! $src && ! $haskell && ! $idris && ! $rust && $main ; then
+if ! $src && ! $haskell && ! $idris && ! $rust && ! $latex && $main ; then
     echo "warning: main specified but no source file created"
 fi
 
