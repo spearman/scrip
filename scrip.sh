@@ -59,7 +59,7 @@ rs
 sh
     -x          create file with xtrace set (set -x)
     -X          create file with automatic non-zero exits set (set -e)
-    -b [shell]  specify a different shell (default sh)
+    -b [shell]  specify a different shell (default bash)
     -n          no file extension
 
 tex
@@ -1051,15 +1051,9 @@ create_sh_script () {
         return 1
     fi
 
-    if [[ $shell == "sh" ]] ; then
-      echo "\
-#!/bin/sh"\
-      > $fullpath
-    else
-      echo "\
+    echo "\
 #!/usr/bin/env $shell"\
-      > $fullpath
-    fi
+    > $fullpath
 
     if [[ !(-e $fullpath) ]]
     then
@@ -1376,7 +1370,7 @@ shebang=false
 
 # option arguments
 
-shell="sh"
+shell="bash"
 main_args="void"
 
 # filenames
